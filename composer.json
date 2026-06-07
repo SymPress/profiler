@@ -1,0 +1,81 @@
+{
+    "name": "sympress/profiler",
+    "description": "Profiler and web debug toolbar for the WordPress kernel.",
+    "type": "wordpress-muplugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Brian Schäffner",
+            "email": "brian.schaeffner@sympress.de",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "ext-json": "*",
+        "sympress/kernel": "@dev"
+    },
+    "require-dev": {
+        "brain/monkey": "^2.6",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "friendsofphp/php-cs-fixer": "^3.94",
+        "inpsyde/php-coding-standards": "^2.0",
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^10.5",
+        "symfony/var-dumper": "^7.3",
+        "szepeviktor/phpstan-wordpress": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "SymPress\\Profiler\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SymPress\\Profiler\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --no-coverage",
+        "test:unit": "phpunit --no-coverage --testsuite Unit",
+        "test:coverage": "phpunit --coverage-html coverage-html",
+        "cs:analyze": "phpstan analyse -c phpstan.neon.dist --no-progress",
+        "cs:style": "php-cs-fixer fix --dry-run --diff --using-cache=no --config=.php-cs-fixer.dist.php",
+        "cs:style:fix": "php-cs-fixer fix --using-cache=no --config=.php-cs-fixer.dist.php",
+        "cs:audit": "phpcs --standard=phpcs.xml.dist",
+        "cs:audit:fix": "phpcbf --standard=phpcs.xml.dist",
+        "cs": [
+            "@cs:style",
+            "@cs:audit"
+        ],
+        "cs:fix": [
+            "@cs:style:fix",
+            "@cs:audit"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "./../*",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "extra": {
+        "wordpress-install-dir": "vendor/wordpress/wordpress",
+        "kernel": {
+            "bundle": "SymPress\\Profiler\\ProfilerBundle",
+            "entry": "profiler/profiler.php"
+        }
+    }
+}

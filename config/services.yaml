@@ -1,0 +1,177 @@
+parameters:
+    profiler.storage_dir: '%kernel.project_dir%/var/cache/%kernel.environment%/profiler'
+    profiler.collect: true
+    profiler.collect_parameter: ''
+    profiler.toolbar.ajax_replace: false
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    SymPress\Profiler\:
+        resource: '../src/'
+        exclude:
+            - '../src/ProfilerBundle.php'
+            - '../src/Contract/'
+            - '../src/Value/'
+
+    SymPress\Profiler\Contract\ProfileStorageInterface:
+        alias: SymPress\Profiler\Infrastructure\FilesystemProfileStorage
+
+    profiler:
+        alias: SymPress\Profiler\Application\Profiler
+
+    debug.stopwatch:
+        alias: SymPress\Profiler\Stopwatch\ProfilerStopwatch
+
+    profiler.is_disabled_state_checker:
+        alias: SymPress\Profiler\Application\ProfilerDisabledStateChecker
+
+    SymPress\Profiler\Infrastructure\FilesystemProfileStorage:
+        arguments:
+            $storageDirectory: '%profiler.storage_dir%'
+
+    SymPress\Profiler\Application\Profiler:
+        arguments:
+            $collectors: !tagged_iterator profiler.collector
+
+    SymPress\Profiler\Application\ProfileGate:
+        arguments:
+            $collect: '%profiler.collect%'
+            $collectParameter: '%profiler.collect_parameter%'
+            $toolbarAjaxReplace: '%profiler.toolbar.ajax_replace%'
+
+    SymPress\Profiler\Application\ProfileViewBuilder:
+        arguments:
+            $collectors: !tagged_iterator profiler.collector
+
+    SymPress\Profiler\Hook\ProfilerRouteHooks:
+        tags:
+            - { name: kernel.hook, hook: 'init', method: handle, priority: 0 }
+
+    SymPress\Profiler\Hook\ProfilerHooks:
+        tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: start, priority: 25 }
+            - { name: kernel.hook, hook: 'template_include', method: captureTemplate, type: 'filter', priority: 1000 }
+            - { name: kernel.hook, hook: 'template_redirect', method: beginFrontendBuffer, priority: -1000 }
+            - { name: kernel.hook, hook: !php/const 'SymPress\Kernel\App::ACTION_ERROR', method: recordThrowable }
+            - { name: kernel.hook, hook: 'shutdown', method: finish, priority: 999999 }
+
+    SymPress\Profiler\Recorder\ProfilerLifecycleRecorder:
+        tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: bootstrap, priority: 30 }
+            - { name: kernel.hook, hook: 'plugins_loaded', method: mark }
+            - { name: kernel.hook, hook: 'setup_theme', method: mark }
+            - { name: kernel.hook, hook: 'after_setup_theme', method: mark }
+            - { name: kernel.hook, hook: 'init', method: mark }
+            - { name: kernel.hook, hook: 'wp_loaded', method: mark }
+            - { name: kernel.hook, hook: 'parse_request', method: mark, accepted_args: 1 }
+            - { name: kernel.hook, hook: 'parse_query', method: mark, accepted_args: 1 }
+            - { name: kernel.hook, hook: 'wp', method: mark, accepted_args: 1 }
+            - { name: kernel.hook, hook: 'template_redirect', method: mark }
+            - { name: kernel.hook, hook: 'template_include', method: captureTemplate, type: 'filter', priority: 999 }
+            - { name: kernel.hook, hook: 'shutdown', method: mark, priority: 900000 }
+
+    SymPress\Profiler\Recorder\ProfilerErrorRecorder:
+        tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: enable, priority: 35 }
+            - { name: kernel.hook, hook: 'shutdown', method: captureShutdown, priority: 950000 }
+
+    SymPress\Profiler\Recorder\ProfilerHttpClientRecorder:
+        tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: enable, priority: 35 }
+            - { name: kernel.hook, hook: 'pre_http_request', method: track, type: 'filter', accepted_args: 3 }
+            - { name: kernel.hook, hook: 'http_api_debug', method: record, accepted_args: 5 }
+
+    SymPress\Profiler\Recorder\ProfilerTemplateRecorder:
+        tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: enable, priority: 35 }
+            - { name: kernel.hook, hook: 'get_template_part', method: recordTemplatePart, accepted_args: 4 }
+
+    SymPress\Profiler\Recorder\ProfilerBlockRecorder:
+        tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: enable, priority: 35 }
+            - { name: kernel.hook, hook: 'render_block_data', method: start, type: 'filter', accepted_args: 3 }
+            - { name: kernel.hook, hook: 'render_block', method: finish, type: 'filter', accepted_args: 3 }
+
+    SymPress\Profiler\Collector\RequestCollector:
+        tags:
+            - { name: profiler.collector, priority: 100 }
+
+    SymPress\Profiler\Collector\PerformanceCollector:
+        tags:
+            - { name: profiler.collector, priority: 90 }
+
+    SymPress\Profiler\Collector\ExceptionCollector:
+        tags:
+            - { name: profiler.collector, priority: 80 }
+
+    SymPress\Profiler\Collector\LogCollector:
+        tags:
+            - { name: profiler.collector, priority: 70 }
+
+    SymPress\Profiler\Collector\DatabaseCollector:
+        tags:
+            - { name: profiler.collector, priority: 60 }
+
+    SymPress\Profiler\Collector\LocalizationCollector:
+        tags:
+            - { name: profiler.collector, priority: 55 }
+
+    SymPress\Profiler\Collector\SecurityCollector:
+        tags:
+            - { name: profiler.collector, priority: 52 }
+
+    SymPress\Profiler\Collector\HookCollector:
+        tags:
+            - { name: profiler.collector, priority: 50 }
+
+    SymPress\Profiler\Collector\RoutingCollector:
+        tags:
+            - { name: profiler.collector, priority: 40 }
+
+    SymPress\Profiler\Collector\WordPressQueryCollector:
+        tags:
+            - { name: profiler.collector, priority: 38 }
+
+    SymPress\Profiler\Collector\RestAjaxCollector:
+        tags:
+            - { name: profiler.collector, priority: 36 }
+
+    SymPress\Profiler\Collector\TemplateCollector:
+        tags:
+            - { name: profiler.collector, priority: 35 }
+
+    SymPress\Profiler\Collector\BlockCollector:
+        tags:
+            - { name: profiler.collector, priority: 34 }
+
+    SymPress\Profiler\Collector\AssetCollector:
+        tags:
+            - { name: profiler.collector, priority: 33 }
+
+    SymPress\Profiler\Collector\HttpClientCollector:
+        tags:
+            - { name: profiler.collector, priority: 30 }
+
+    SymPress\Profiler\Collector\CacheCollector:
+        tags:
+            - { name: profiler.collector, priority: 20 }
+
+    SymPress\Profiler\Collector\OptionsCollector:
+        tags:
+            - { name: profiler.collector, priority: 18 }
+
+    SymPress\Profiler\Collector\PluginThemeCollector:
+        tags:
+            - { name: profiler.collector, priority: 16 }
+
+    SymPress\Profiler\Collector\CronCollector:
+        tags:
+            - { name: profiler.collector, priority: 14 }
+
+    SymPress\Profiler\Collector\KernelCollector:
+        tags:
+            - { name: profiler.collector, priority: 10 }
