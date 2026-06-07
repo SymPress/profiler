@@ -1,0 +1,288 @@
+/* WordPress collector content uses Symfony WebProfiler classes with extra-long WP values. */
+#collector-wrapper,
+#collector-content {
+    min-width: 0;
+}
+
+#collector-content .profiler-section {
+    margin: 1.5rem 0;
+}
+
+#collector-content > h2:first-child {
+    box-shadow: inset 0 -1px 0 var(--page-background), 0 2px 0 var(--h2-border-color), 0 5px 0 var(--page-background);
+    font-size: 24px;
+    margin: 5px 0 30px;
+    padding-bottom: 5px;
+}
+
+#collector-content .table-with-search-field {
+    max-width: 100%;
+}
+
+#collector-content .table-with-search-field table {
+    max-width: 100%;
+}
+
+#collector-content .metadata-table {
+    max-width: 760px;
+}
+
+#collector-content .metadata-table th.key {
+    width: 260px;
+}
+
+#collector-content .profiler-request-parameters {
+    display: grid;
+    gap: 30px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 1rem 0 1.5rem;
+}
+
+#collector-content .profiler-request-parameters h3 {
+    margin-top: 0;
+}
+
+#collector-content .profiler-empty-box {
+    align-items: center;
+    display: flex;
+    min-height: 54px;
+    justify-content: center;
+    padding: 0;
+}
+
+#collector-content .profiler-empty-box p {
+    margin: 0;
+}
+
+#collector-content .queries-table {
+    table-layout: fixed;
+}
+
+#collector-content .queries-table th:nth-child(1),
+#collector-content .queries-table td:nth-child(1) {
+    width: 44px;
+}
+
+#collector-content .queries-table th:nth-child(2),
+#collector-content .queries-table td:nth-child(2) {
+    width: 95px;
+}
+
+#collector-content .queries-table pre {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+#collector-content .translation-table th:nth-child(1),
+#collector-content .translation-table td:nth-child(1) {
+    white-space: nowrap;
+    width: 70px;
+}
+
+#collector-content .translation-table th:nth-child(3),
+#collector-content .translation-table td:nth-child(3) {
+    width: 95px;
+}
+
+#collector-content .profiler-sql {
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-monospace);
+    font-weight: 600;
+    margin: 0 0 .5rem;
+}
+
+#collector-content .profiler-sql-keyword {
+    color: var(--highlight-keyword);
+    font-weight: 700;
+}
+
+#collector-content .profiler-query-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: .35rem 0 0;
+}
+
+#collector-content .profiler-query-links a {
+    font-size: 13px;
+}
+
+#collector-content .profiler-code-line {
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-monospace);
+}
+
+#collector-content .profiler-tab-target[hidden] {
+    display: none;
+}
+
+#collector-content .timeline {
+    display: grid;
+    gap: .75rem;
+}
+
+#collector-content .timeline-row {
+    display: grid;
+    gap: .5rem;
+}
+
+#collector-content .timeline-row-header {
+    align-items: baseline;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+#collector-content .timeline-track {
+    background: var(--base-1);
+    border-radius: 999px;
+    height: 10px;
+    overflow: hidden;
+}
+
+#collector-content .timeline-bar {
+    background: linear-gradient(90deg, var(--green-300), var(--green-600));
+    height: 100%;
+}
+
+#collector-content #timeline-control {
+    background: var(--table-background);
+    box-shadow: var(--shadow);
+    margin: 1em 0;
+    padding: 10px;
+}
+
+#collector-content #timeline-control label {
+    font-weight: bold;
+    margin-right: 1em;
+}
+
+#collector-content #timeline-control input[type="number"] {
+    background: var(--metric-value-background);
+    font-size: 16px;
+    margin-right: 4px;
+    padding: 4px;
+    text-align: right;
+    width: 5em;
+}
+
+#collector-content #timeline-control .help {
+    margin-left: 1em;
+}
+
+#collector-content .sf-profiler-timeline .legends {
+    font-size: 12px;
+    line-height: 1.5em;
+    margin: 1em 0 0;
+}
+
+#collector-content .sf-profiler-timeline .legends .timeline-category {
+    background: none;
+    border: none;
+    border-left: 1em solid transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    display: none;
+    line-height: 1em;
+    margin: 0 1em 0 0;
+    opacity: .5;
+    padding: 0 .5em;
+}
+
+#collector-content .sf-profiler-timeline .legends .timeline-category.active {
+    opacity: 1;
+}
+
+#collector-content .sf-profiler-timeline .legends .timeline-category.present {
+    display: inline-block;
+}
+
+#collector-content .timeline-graph {
+    background-color: var(--table-background);
+    border: 1px solid var(--table-border-color);
+    box-sizing: border-box;
+    margin: 1em 0;
+    min-height: 250px;
+    overflow: visible;
+    width: 100%;
+}
+
+#collector-content .timeline-graph .timeline-grid-line,
+#collector-content .timeline-graph .timeline-border {
+    fill: none;
+    shape-rendering: crispEdges;
+    stroke: var(--table-border-color);
+    stroke-width: 1px;
+}
+
+#collector-content .timeline-graph .timeline-label {
+    fill: var(--color-text);
+    font-family: var(--font-family-system);
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 12px;
+}
+
+#collector-content .timeline-graph .timeline-sublabel {
+    fill: var(--color-muted);
+}
+
+#collector-content .timeline-graph .timeline-period {
+    stroke-width: 0;
+}
+
+#menu-profiler li > .label.disabled {
+    background: var(--base-1);
+    border-radius: 4px;
+    color: var(--menu-disabled-color);
+    cursor: default;
+    display: flex;
+    align-items: center;
+    padding: 5px 7px;
+    overflow: hidden;
+}
+
+#menu-profiler li.disabled.selected::before {
+    display: none;
+}
+
+#menu-profiler li > .label.disabled .icon {
+    color: var(--menu-icon-disabled-color);
+    display: flex;
+    margin-right: 8px;
+    text-align: center;
+}
+
+#menu-profiler li > .label.disabled strong {
+    flex: 1;
+    font-size: var(--font-size-body);
+    font-weight: normal;
+}
+
+#menu-profiler li > .label.disabled .count {
+    background: var(--selected-badge-background);
+    border-radius: 4px;
+    box-shadow: var(--selected-badge-shadow);
+    color: var(--selected-badge-color);
+    display: inline-block;
+    font-weight: bold;
+    line-height: 1;
+    min-width: 10px;
+    padding: 3px 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#menu-profiler li > .label.disabled .count span {
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    #collector-content .profiler-request-parameters {
+        grid-template-columns: 1fr;
+    }
+
+    #collector-content .timeline-graph {
+        min-width: 760px;
+    }
+}
