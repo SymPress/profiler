@@ -44,9 +44,11 @@ final class ProfilerEndpointController
             $this->renderToolbar();
         }
 
-        if ($this->matcher->isProfilerRequest()) {
-            $this->renderProfiler();
+        if (!$this->matcher->isProfilerRequest()) {
+            return;
         }
+
+        $this->renderProfiler();
     }
 
     private function renderFont(): void

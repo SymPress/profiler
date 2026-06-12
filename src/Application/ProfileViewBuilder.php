@@ -12,9 +12,7 @@ use SymPress\Profiler\View\ToolbarRenderer;
 
 final class ProfileViewBuilder
 {
-    /**
-     * @param iterable<DataCollectorInterface> $collectors
-     */
+    /** @param iterable<DataCollectorInterface> $collectors */
     public function __construct(
         private readonly iterable $collectors,
         private readonly ToolbarRenderer $toolbarRenderer,
@@ -31,15 +29,13 @@ final class ProfileViewBuilder
         return $this->toolbarRenderer->renderContent($profile, $this->toolbarBlocks($profile));
     }
 
-    /**
-     * @return list<ToolbarBlock>
-     */
+    /** @return list<ToolbarBlock> */
     public function toolbarBlocks(ProfileRecord $profile): array
     {
         $blocks = [];
 
         foreach ($this->collectors as $collector) {
-            $payload = $profile->collector($collector->key());
+            $payload = $profile->collector($collector->getKey());
             $block = $collector->createToolbarBlock($payload, $profile);
 
             if (!$block instanceof ToolbarBlock) {
@@ -52,15 +48,13 @@ final class ProfileViewBuilder
         return $blocks;
     }
 
-    /**
-     * @return list<CollectorPanel>
-     */
+    /** @return list<CollectorPanel> */
     public function panels(ProfileRecord $profile): array
     {
         $panels = [];
 
         foreach ($this->collectors as $collector) {
-            $payload = $profile->collector($collector->key());
+            $payload = $profile->collector($collector->getKey());
             $panels[] = $collector->renderPanel($payload, $profile);
         }
 

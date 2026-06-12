@@ -14,25 +14,19 @@ final class ProfilerUrlGenerator
     ) {
     }
 
-    /**
-     * @param array<string, scalar|null> $query
-     */
+    /** @param array<string, scalar|null> $query */
     public function home(array $query = []): string
     {
         return $this->withQuery($this->url($this->profilerPrefix), $query);
     }
 
-    /**
-     * @param array<string, scalar|null> $query
-     */
+    /** @param array<string, scalar|null> $query */
     public function latest(array $query = []): string
     {
         return $this->withQuery($this->url($this->profilerPrefix . '/latest'), $query);
     }
 
-    /**
-     * @param array<string, scalar|null> $query
-     */
+    /** @param array<string, scalar|null> $query */
     public function profile(string $token, string $panel = 'request', array $query = []): string
     {
         $url = $this->url($this->profilerPrefix . '/' . rawurlencode($token));
@@ -41,9 +35,7 @@ final class ProfilerUrlGenerator
         return $this->withQuery($url, $query);
     }
 
-    /**
-     * @param ProfileSearchCriteria|array<string, scalar|null> $criteria
-     */
+    /** @param ProfileSearchCriteria|array<string, scalar|null> $criteria */
     public function search(ProfileSearchCriteria|array $criteria = []): string
     {
         if ($criteria instanceof ProfileSearchCriteria) {
@@ -126,9 +118,7 @@ final class ProfilerUrlGenerator
         return $path;
     }
 
-    /**
-     * @param array<string, scalar|null> $query
-     */
+    /** @param array<string, scalar|null> $query */
     private function withQuery(string $url, array $query): string
     {
         $filtered = array_filter(

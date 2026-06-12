@@ -13,11 +13,6 @@ use SymPress\Profiler\Value\ProfileSearchCriteria;
 
 final class Profiler
 {
-    /**
-     * @var iterable<DataCollectorInterface>
-     */
-    private readonly iterable $collectors;
-
     private bool $started = false;
     private bool $finalized = false;
     private bool $forceEnabled = false;
@@ -29,24 +24,18 @@ final class Profiler
     private ?string $template = null;
     private ?ProfileRecord $profile = null;
 
-    /**
-     * @var list<array{class: string, message: string, file: string, line: int}>
-     */
+    /** @var list<array{class: string, message: string, file: string, line: int}> */
     private array $throwables = [];
 
-    /**
-     * @param iterable<DataCollectorInterface> $collectors
-     */
+    /** @param iterable<DataCollectorInterface> $collectors */
     public function __construct(
-        iterable $collectors,
+        private readonly iterable $collectors,
         private readonly ProfileGate $gate,
         private readonly ProfileStorageInterface $storage,
         private readonly ProfileViewBuilder $viewBuilder,
         private readonly ProfilerUrlGenerator $urls,
         private readonly WpContext $context,
     ) {
-
-        $this->collectors = $collectors;
     }
 
     public function start(): void
@@ -104,9 +93,7 @@ final class Profiler
             : null;
     }
 
-    /**
-     * @return list<ProfileRecord>
-     */
+    /** @return list<ProfileRecord> */
     public function find(
         string $ip = '',
         string $url = '',
@@ -115,6 +102,7 @@ final class Profiler
         string $start = '',
         string $end = '',
     ): array {
+
         return $this->storage->search(new ProfileSearchCriteria(
             method: $method,
             url: $url,
@@ -148,10 +136,10 @@ final class Profiler
         }
 
         $this->throwables[] = [
-            'class' => $throwable::class,
+            'class'   => $throwable::class,
             'message' => $throwable->getMessage(),
-            'file' => $throwable->getFile(),
-            'line' => $throwable->getLine(),
+            'file'    => $throwable->getFile(),
+            'line'    => $throwable->getLine(),
         ];
     }
 
@@ -212,7 +200,7 @@ final class Profiler
         $collectorPayloads = [];
 
         foreach ($this->collectors as $collector) {
-            $collectorPayloads[$collector->key()] = $collector->collect($context);
+            $collectorPayloads[$collector->getKey()] = $collector->collect($context);
         }
 
         $this->profile = new ProfileRecord(
@@ -231,35 +219,31 @@ final class Profiler
         return $this->profile;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function meta(ProfileContext $context): array
     {
         $requestUri = $this->serverValue('REQUEST_URI', '/');
 
         return [
-            'method' => strtoupper($this->serverValue('REQUEST_METHOD', 'GET')),
-            'uri' => $requestUri,
-            'path' => (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/'),
-            'url' => $this->currentUrl(),
-            'ip' => $this->serverValue('REMOTE_ADDR'),
-            'referer' => $this->serverValue('HTTP_REFERER'),
-            'content_type' => $this->serverValue('CONTENT_TYPE'),
-            'status_code' => $context->statusCode(),
-            'duration_ms' => $context->durationMs(),
-            'memory_mb' => $context->memoryMb(),
+            'method'         => strtoupper($this->serverValue('REQUEST_METHOD', 'GET')),
+            'uri'            => $requestUri,
+            'path'           => (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/'),
+            'url'            => $this->currentUrl(),
+            'ip'             => $this->serverValue('REMOTE_ADDR'),
+            'referer'        => $this->serverValue('HTTP_REFERER'),
+            'content_type'   => $this->serverValue('CONTENT_TYPE'),
+            'status_code'    => $context->statusCode(),
+            'duration_ms'    => $context->durationMs(),
+            'memory_mb'      => $context->memoryMb(),
             'peak_memory_mb' => $context->peakMemoryMb(),
-            'context' => $this->contextLabel(),
-            'template' => $context->template(),
-            'profiler_url' => $context->profilerUrl(),
-            'user' => $this->currentUserSummary(),
+            'context'        => $this->contextLabel(),
+            'template'       => $context->template(),
+            'profiler_url'   => $context->profilerUrl(),
+            'user'           => $this->currentUserSummary(),
         ];
     }
 
-    /**
-     * @return array{id: int, login: string, roles: list<string>}|null
-     */
+    /** @return array{id: int, login: string, roles: list<string>}|null */
     private function currentUserSummary(): ?array
     {
         if (!function_exists('is_user_logged_in') || !is_user_logged_in() || !function_exists('wp_get_current_user')) {
@@ -270,7 +254,7 @@ final class Profiler
         $roles = array_values($user->roles);
 
         return [
-            'id' => (int) $user->ID,
+            'id'    => (int) $user->ID,
             'login' => (string) ($user->user_login ?? ''),
             'roles' => $roles,
         ];
@@ -287,9 +271,11 @@ final class Profiler
         header(sprintf('X-Debug-Token: %s', $this->token), true);
         header(sprintf('X-Debug-Token-Link: %s', $this->profilerUrl($this->token)), true);
 
-        if ($this->gate->shouldReplaceToolbarAfterAjax()) {
-            header('Symfony-Debug-Toolbar-Replace: 1', true);
+        if (!$this->gate->shouldReplaceToolbarAfterAjax()) {
+            return;
         }
+
+        header('Symfony-Debug-Toolbar-Replace: 1', true);
     }
 
     private function debugTokenFromResponse(mixed $response): ?string
@@ -339,9 +325,7 @@ final class Profiler
         return null;
     }
 
-    /**
-     * @param array<array-key, mixed> $headers
-     */
+    /** @param array<array-key, mixed> $headers */
     private function debugTokenFromHeaderArray(array $headers): ?string
     {
         foreach ($headers as $name => $value) {
@@ -361,9 +345,7 @@ final class Profiler
         return null;
     }
 
-    /**
-     * @param array<array-key, mixed> $values
-     */
+    /** @param array<array-key, mixed> $values */
     private function firstScalarValue(array $values): ?string
     {
         foreach ($values as $value) {
@@ -384,9 +366,7 @@ final class Profiler
         return $object->{$property};
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function headerMap(): array
     {
         $headers = [];

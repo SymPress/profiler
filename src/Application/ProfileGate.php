@@ -218,5 +218,4 @@ final class ProfileGate
             ? sanitize_text_field($unslashed)
             : $unslashed;
     }
-
 }
