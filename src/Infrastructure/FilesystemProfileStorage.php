@@ -30,9 +30,11 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
             ),
         );
 
-        if (random_int(1, 20) === 1) {
-            $this->cleanup();
+        if (random_int(1, 20) !== 1) {
+            return;
         }
+
+        $this->cleanup();
     }
 
     public function load(string $token): ?ProfileRecord
@@ -92,9 +94,7 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
         return sprintf('%s/%s.json', rtrim($this->storageDirectory, '/'), $token);
     }
 
-    /**
-     * @return list<ProfileRecord>
-     */
+    /** @return list<ProfileRecord> */
     private function allProfiles(): array
     {
         if (!is_dir($this->storageDirectory)) {
@@ -108,9 +108,11 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
             $token = pathinfo($file, PATHINFO_FILENAME);
             $profile = $this->load($token);
 
-            if ($profile instanceof ProfileRecord) {
-                $profiles[] = $profile;
+            if (!($profile instanceof ProfileRecord)) {
+                continue;
             }
+
+            $profiles[] = $profile;
         }
 
         usort(
