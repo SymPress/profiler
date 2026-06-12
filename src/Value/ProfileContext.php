@@ -75,17 +75,13 @@ final class ProfileContext
         return $this->template;
     }
 
-    /**
-     * @return list<array{class: string, message: string, file: string, line: int}>
-     */
+    /** @return list<array{class: string, message: string, file: string, line: int}> */
     public function throwables(): array
     {
         return $this->throwables;
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function responseHeaders(): array
     {
         return $this->responseHeaders;
