@@ -20,9 +20,7 @@ final class Html
         return self::escape($value);
     }
 
-    /**
-     * @param array<string, mixed> $rows
-     */
+    /** @param array<string, mixed> $rows */
     public static function definitionTable(array $rows): string
     {
         $html = '<table class="metadata-table"><tbody>';
@@ -101,9 +99,7 @@ final class Html
         );
     }
 
-    /**
-     * @param list<array{label: string, value: string, detail?: string}> $metrics
-     */
+    /** @param list<array{label: string, value: string, detail?: string}> $metrics */
     public static function metricTiles(array $metrics): string
     {
         if ($metrics === []) {
@@ -128,9 +124,7 @@ final class Html
         return $html . '</div>';
     }
 
-    /**
-     * @param list<array{label: string, content: string, active?: bool, disabled?: bool, badge?: int|string}> $tabs
-     */
+    /** @param list<array{label: string, content: string, active?: bool, disabled?: bool, badge?: int|string}> $tabs */
     public static function tabs(array $tabs): string
     {
         if ($tabs === []) {
@@ -177,9 +171,7 @@ final class Html
         return $html . '</div>';
     }
 
-    /**
-     * @param list<array{label: string, active?: bool, disabled?: bool, badge?: int|string, target?: string}> $items
-     */
+    /** @param list<array{label: string, active?: bool, disabled?: bool, badge?: int|string, target?: string}> $items */
     public static function tabNavigation(array $items): string
     {
         if ($items === []) {
@@ -226,9 +218,7 @@ final class Html
         return $html . '</div>';
     }
 
-    /**
-     * @param array<string, mixed> $rows
-     */
+    /** @param array<string, mixed> $rows */
     public static function keyValueTable(array $rows, string $keyHeader = 'Key', string $valueHeader = 'Value'): string
     {
         $tableRows = [];
@@ -240,9 +230,7 @@ final class Html
         return self::table([$keyHeader, $valueHeader], $tableRows);
     }
 
-    /**
-     * @param array<string, mixed> $values
-     */
+    /** @param array<string, mixed> $values */
     public static function parameterBox(array $values): string
     {
         if ($values === []) {
