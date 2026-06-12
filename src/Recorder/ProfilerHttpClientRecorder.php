@@ -10,14 +10,10 @@ final class ProfilerHttpClientRecorder
 {
     private bool $enabled = false;
 
-    /**
-     * @var array<string, list<array{started_at: float, method: string, url: string, args: array<string, mixed>}>>
-     */
+    /** @var array<string, list<array{started_at: float, method: string, url: string, args: array<string, mixed>}>> */
     private array $pending = [];
 
-    /**
-     * @var list<array{method: string, url: string, status_code: int|null, error: string, duration_ms: float, transport: string, blocking: bool, timeout: float, response_size: int, args: array<string, mixed>}>
-     */
+    /** @var list<array{method: string, url: string, status_code: int|null, error: string, duration_ms: float, transport: string, blocking: bool, timeout: float, response_size: int, args: array<string, mixed>}> */
     private array $entries = [];
 
     public function __construct(
@@ -30,9 +26,7 @@ final class ProfilerHttpClientRecorder
         $this->enabled = $this->gate->shouldCollect();
     }
 
-    /**
-     * @param array<string, mixed> $parsedArgs
-     */
+    /** @param array<string, mixed> $parsedArgs */
     public function track(mixed $preempt, array $parsedArgs, string $url): mixed
     {
         if (!$this->enabled) {
@@ -44,17 +38,15 @@ final class ProfilerHttpClientRecorder
         $this->pending[$key] ??= [];
         $this->pending[$key][] = [
             'started_at' => microtime(true),
-            'method' => $method,
-            'url' => $url,
-            'args' => $this->normalizeArgs($parsedArgs),
+            'method'     => $method,
+            'url'        => $url,
+            'args'       => $this->normalizeArgs($parsedArgs),
         ];
 
         return $preempt;
     }
 
-    /**
-     * @param array<string, mixed> $parsedArgs
-     */
+    /** @param array<string, mixed> $parsedArgs */
     public function record(mixed $response, string $context, string $class, array $parsedArgs, string $url): void
     {
         if (!$this->enabled || $context !== 'response') {
@@ -80,22 +72,20 @@ final class ProfilerHttpClientRecorder
         }
 
         $this->entries[] = [
-            'method' => $method,
-            'url' => $url,
-            'status_code' => $statusCode,
-            'error' => $error,
-            'duration_ms' => round((microtime(true) - $startedAt) * 1000, 2),
-            'transport' => $class,
-            'blocking' => (bool) ($parsedArgs['blocking'] ?? true),
-            'timeout' => is_numeric($parsedArgs['timeout'] ?? null) ? (float) $parsedArgs['timeout'] : 0.0,
+            'method'        => $method,
+            'url'           => $url,
+            'status_code'   => $statusCode,
+            'error'         => $error,
+            'duration_ms'   => round((microtime(true) - $startedAt) * 1000, 2),
+            'transport'     => $class,
+            'blocking'      => (bool) ($parsedArgs['blocking'] ?? true),
+            'timeout'       => is_numeric($parsedArgs['timeout'] ?? null) ? (float) $parsedArgs['timeout'] : 0.0,
             'response_size' => $responseSize,
-            'args' => $pending['args'] ?? $this->normalizeArgs($parsedArgs),
+            'args'          => $pending['args'] ?? $this->normalizeArgs($parsedArgs),
         ];
     }
 
-    /**
-     * @return list<array{method: string, url: string, status_code: int|null, error: string, duration_ms: float, transport: string, blocking: bool, timeout: float, response_size: int, args: array<string, mixed>}>
-     */
+    /** @return list<array{method: string, url: string, status_code: int|null, error: string, duration_ms: float, transport: string, blocking: bool, timeout: float, response_size: int, args: array<string, mixed>}> */
     public function entries(): array
     {
         return $this->entries;
@@ -106,9 +96,7 @@ final class ProfilerHttpClientRecorder
         return $method . ' ' . $url;
     }
 
-    /**
-     * @return array{started_at: float, method: string, url: string, args: array<string, mixed>}|null
-     */
+    /** @return array{started_at: float, method: string, url: string, args: array<string, mixed>}|null */
     private function popPending(string $method, string $url): ?array
     {
         $key = $this->pendingKey($method, $url);

@@ -11,9 +11,7 @@ final class ProfilerLifecycleRecorder
     private bool $enabled = false;
     private float $requestStartedAt = 0.0;
 
-    /**
-     * @var list<array{name: string, started_at: float, memory_mb: float, detail: string}>
-     */
+    /** @var list<array{name: string, started_at: float, memory_mb: float, detail: string}> */
     private array $events = [];
 
     public function __construct(
@@ -47,10 +45,10 @@ final class ProfilerLifecycleRecorder
         }
 
         $this->events[] = [
-            'name' => $name,
+            'name'       => $name,
             'started_at' => microtime(true),
-            'memory_mb' => round(memory_get_usage(true) / 1048576, 2),
-            'detail' => '',
+            'memory_mb'  => round(memory_get_usage(true) / 1048576, 2),
+            'detail'     => '',
         ];
     }
 
@@ -58,19 +56,17 @@ final class ProfilerLifecycleRecorder
     {
         if ($this->enabled) {
             $this->events[] = [
-                'name' => 'template_include',
+                'name'       => 'template_include',
                 'started_at' => microtime(true),
-                'memory_mb' => round(memory_get_usage(true) / 1048576, 2),
-                'detail' => $template,
+                'memory_mb'  => round(memory_get_usage(true) / 1048576, 2),
+                'detail'     => $template,
             ];
         }
 
         return $template;
     }
 
-    /**
-     * @return list<array{name: string, started_at: float, memory_mb: float, detail: string}>
-     */
+    /** @return list<array{name: string, started_at: float, memory_mb: float, detail: string}> */
     public function events(): array
     {
         return $this->events;

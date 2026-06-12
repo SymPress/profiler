@@ -8,16 +8,14 @@ use SymPress\Profiler\Application\ProfileGate;
 
 final class ProfilerErrorRecorder
 {
+    private const int E_STRICT_VALUE = 2048;
+
     private bool $enabled = false;
 
-    /**
-     * @var list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}>
-     */
+    /** @var list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}> */
     private array $entries = [];
 
-    /**
-     * @var array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}|null
-     */
+    /** @var array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}|null */
     private ?array $fatalError = null;
 
     public function __construct(
@@ -68,34 +66,28 @@ final class ProfilerErrorRecorder
         return false;
     }
 
-    /**
-     * @return list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}>
-     */
+    /** @return list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}> */
     public function entries(): array
     {
         return $this->entries;
     }
 
-    /**
-     * @return array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}|null
-     */
+    /** @return array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}|null */
     public function fatalError(): ?array
     {
         return $this->fatalError;
     }
 
-    /**
-     * @return array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}
-     */
+    /** @return array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string} */
     private function normalizeEntry(int $severity, string $message, string $file, int $line): array
     {
         return [
-            'type' => $severity,
-            'label' => $this->labelForSeverity($severity),
-            'level' => $this->levelForSeverity($severity),
-            'message' => $message,
-            'file' => $file,
-            'line' => $line,
+            'type'        => $severity,
+            'label'       => $this->labelForSeverity($severity),
+            'level'       => $this->levelForSeverity($severity),
+            'message'     => $message,
+            'file'        => $file,
+            'line'        => $line,
             'captured_at' => gmdate(DATE_ATOM),
         ];
     }
@@ -114,7 +106,7 @@ final class ProfilerErrorRecorder
             E_USER_ERROR => 'User Error',
             E_USER_WARNING => 'User Warning',
             E_USER_NOTICE => 'User Notice',
-            E_STRICT => 'Strict',
+            self::E_STRICT_VALUE => 'Strict',
             E_RECOVERABLE_ERROR => 'Recoverable Error',
             E_DEPRECATED => 'Deprecated',
             E_USER_DEPRECATED => 'User Deprecated',

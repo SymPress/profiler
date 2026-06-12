@@ -10,9 +10,7 @@ final class ProfilerTemplateRecorder
 {
     private bool $enabled = false;
 
-    /**
-     * @var list<array{slug: string, name: string, templates: list<string>, args: array<array-key, mixed>, captured_at: float}>
-     */
+    /** @var list<array{slug: string, name: string, templates: list<string>, args: array<array-key, mixed>, captured_at: float}> */
     private array $parts = [];
 
     public function __construct(
@@ -25,10 +23,6 @@ final class ProfilerTemplateRecorder
         $this->enabled = $this->gate->shouldCollect();
     }
 
-    /**
-     * @param list<string>|mixed $templates
-     * @param array<array-key, mixed>|mixed $args
-     */
     public function recordTemplatePart(string $slug, ?string $name = null, mixed $templates = [], mixed $args = []): void
     {
         if (!$this->enabled) {
@@ -36,25 +30,21 @@ final class ProfilerTemplateRecorder
         }
 
         $this->parts[] = [
-            'slug' => $slug,
-            'name' => $name ?? '',
-            'templates' => $this->stringList($templates),
-            'args' => is_array($args) ? $args : [],
+            'slug'        => $slug,
+            'name'        => $name ?? '',
+            'templates'   => $this->stringList($templates),
+            'args'        => is_array($args) ? $args : [],
             'captured_at' => microtime(true),
         ];
     }
 
-    /**
-     * @return list<array{slug: string, name: string, templates: list<string>, args: array<array-key, mixed>, captured_at: float}>
-     */
+    /** @return list<array{slug: string, name: string, templates: list<string>, args: array<array-key, mixed>, captured_at: float}> */
     public function parts(): array
     {
         return $this->parts;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function stringList(mixed $value): array
     {
         if (!is_array($value)) {
@@ -64,9 +54,11 @@ final class ProfilerTemplateRecorder
         $strings = [];
 
         foreach ($value as $item) {
-            if (is_scalar($item) || $item instanceof \Stringable) {
-                $strings[] = (string) $item;
+            if (!is_scalar($item) && !($item instanceof \Stringable)) {
+                continue;
             }
+
+            $strings[] = (string) $item;
         }
 
         return $strings;
