@@ -48,17 +48,17 @@ final class ProfileViewBuilderTest extends TestCase
             ) {
             }
 
-            public function key(): string
+            public function getKey(): string
             {
                 return $this->keyValue;
             }
 
-            public function label(): string
+            public function getLabel(): string
             {
                 return $this->labelValue;
             }
 
-            public function icon(): string
+            public function getIcon(): string
             {
                 return $this->iconValue;
             }
