@@ -23,17 +23,17 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'kernel';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Configuration';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'config';
     }
@@ -46,42 +46,40 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
         foreach ($this->kernel->discoverBundles()->all() as $bundle) {
             $bundles[] = [
                 'package' => $bundle->package(),
-                'type' => $bundle->type(),
-                'entry' => $bundle->entry(),
-                'bundle' => $bundle->bundle()::class,
+                'type'    => $bundle->type(),
+                'entry'   => $bundle->entry(),
+                'bundle'  => $bundle->bundle()::class,
             ];
         }
 
         return [
-            'environment' => $this->config->env(),
-            'debug' => defined('WP_DEBUG') && WP_DEBUG,
-            'script_debug' => defined('SCRIPT_DEBUG') && SCRIPT_DEBUG,
-            'wordpress_version' => $this->wordpressVersion(),
-            'context' => $this->contextLabel(),
-            'project_dir' => $this->kernel->getProjectDir(),
-            'cache_dir' => $this->kernel->getCacheDir(),
-            'php_version' => PHP_VERSION,
-            'home_url' => function_exists('home_url') ? (string) home_url('/') : '',
-            'site_url' => function_exists('site_url') ? (string) site_url('/') : '',
-            'app_booted' => App::container() !== null,
-            'container_class' => App::container() !== null ? App::container()::class : '',
-            'theme' => [
-                'name' => is_object($theme) ? (string) $theme->get('Name') : '',
-                'version' => is_object($theme) ? (string) $theme->get('Version') : '',
+            'environment'          => $this->config->env(),
+            'debug'                => defined('WP_DEBUG') && WP_DEBUG,
+            'script_debug'         => defined('SCRIPT_DEBUG') && SCRIPT_DEBUG,
+            'wordpress_version'    => $this->wordpressVersion(),
+            'context'              => $this->contextLabel(),
+            'project_dir'          => $this->kernel->getProjectDir(),
+            'cache_dir'            => $this->kernel->getCacheDir(),
+            'php_version'          => PHP_VERSION,
+            'home_url'             => function_exists('home_url') ? (string) home_url('/') : '',
+            'site_url'             => function_exists('site_url') ? (string) site_url('/') : '',
+            'app_booted'           => App::container() !== null,
+            'container_class'      => App::container() !== null ? App::container()::class : '',
+            'theme'                => [
+                'name'       => is_object($theme) ? (string) $theme->get('Name') : '',
+                'version'    => is_object($theme) ? (string) $theme->get('Version') : '',
                 'stylesheet' => is_object($theme) ? (string) $theme->get_stylesheet() : '',
             ],
-            'locale' => function_exists('get_locale') ? (string) get_locale() : '',
-            'multisite' => function_exists('is_multisite') ? is_multisite() : false,
+            'locale'               => function_exists('get_locale') ? (string) get_locale() : '',
+            'multisite'            => function_exists('is_multisite') ? is_multisite() : false,
             'included_files_count' => count(get_included_files()),
-            'included_files' => array_slice(get_included_files(), -80),
-            'bundles' => $bundles,
-            'captured_at' => $context->finishedAtIso(),
+            'included_files'       => array_slice(get_included_files(), -80),
+            'bundles'              => $bundles,
+            'captured_at'          => $context->finishedAtIso(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $bundleCount = count((array) ($payload['bundles'] ?? []));
@@ -97,9 +95,7 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $bundleRows = [];
@@ -133,12 +129,12 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
         ]));
         $html .= '<p><a href="#">View full PHP configuration</a></p>';
         $html .= Html::section('Runtime', Html::keyValueTable([
-            'home_url' => Html::dumpValue($this->stringValue($payload, 'home_url')),
-            'site_url' => Html::dumpValue($this->stringValue($payload, 'site_url')),
-            'project_dir' => Html::dumpValue($this->stringValue($payload, 'project_dir')),
-            'cache_dir' => Html::dumpValue($this->stringValue($payload, 'cache_dir')),
-            'multisite' => Html::dumpValue($this->boolValue($payload, 'multisite')),
-            'app_booted' => Html::dumpValue($this->boolValue($payload, 'app_booted')),
+            'home_url'       => Html::dumpValue($this->stringValue($payload, 'home_url')),
+            'site_url'       => Html::dumpValue($this->stringValue($payload, 'site_url')),
+            'project_dir'    => Html::dumpValue($this->stringValue($payload, 'project_dir')),
+            'cache_dir'      => Html::dumpValue($this->stringValue($payload, 'cache_dir')),
+            'multisite'      => Html::dumpValue($this->boolValue($payload, 'multisite')),
+            'app_booted'     => Html::dumpValue($this->boolValue($payload, 'app_booted')),
             'included_files' => Html::dumpValue($this->intValue($payload, 'included_files_count')),
         ], 'Name', 'Value'));
         $html .= Html::section('Theme', Html::codeBlock($payload['theme'] ?? []));
@@ -147,8 +143,8 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
 
         return $this->panel(
             'kernel',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', count($this->bundles($payload))),
         );
@@ -175,9 +171,9 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
 
             $normalized[] = [
                 'package' => $this->stringValue($bundle, 'package'),
-                'type' => $this->stringValue($bundle, 'type'),
-                'entry' => $this->stringValue($bundle, 'entry'),
-                'bundle' => $this->stringValue($bundle, 'bundle'),
+                'type'    => $this->stringValue($bundle, 'type'),
+                'entry'   => $this->stringValue($bundle, 'entry'),
+                'bundle'  => $this->stringValue($bundle, 'bundle'),
             ];
         }
 

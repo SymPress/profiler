@@ -18,17 +18,17 @@ final class HttpClientCollector extends AbstractCollector implements DataCollect
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'http_client';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'HTTP Client';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'forward';
     }
@@ -42,9 +42,11 @@ final class HttpClientCollector extends AbstractCollector implements DataCollect
         foreach ($entries as $entry) {
             $totalDuration += $entry['duration_ms'];
 
-            if ($entry['error'] !== '') {
-                $errorCount++;
+            if ($entry['error'] === '') {
+                continue;
             }
+
+            $errorCount++;
         }
 
         usort(
@@ -53,24 +55,20 @@ final class HttpClientCollector extends AbstractCollector implements DataCollect
         );
 
         return [
-            'count' => count($entries),
-            'error_count' => $errorCount,
+            'count'             => count($entries),
+            'error_count'       => $errorCount,
             'total_duration_ms' => round($totalDuration, 2),
-            'requests' => $entries,
+            'requests'          => $entries,
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
     {
         return null;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $requests = $payload['requests'] ?? [];
@@ -78,16 +76,16 @@ final class HttpClientCollector extends AbstractCollector implements DataCollect
         if (!is_array($requests) || $requests === []) {
             return $this->panel(
                 'http_client',
-                $this->label(),
-                $this->icon(),
+                $this->getLabel(),
+                $this->getIcon(),
                 Html::emptyPanel('No outgoing HTTP API requests were captured.'),
                 enabled: false,
             );
         }
 
         $overview = Html::definitionTable([
-            'Requests' => $this->intValue($payload, 'count'),
-            'Errors' => $this->intValue($payload, 'error_count'),
+            'Requests'            => $this->intValue($payload, 'count'),
+            'Errors'              => $this->intValue($payload, 'error_count'),
             'Total duration (ms)' => $this->floatValue($payload, 'total_duration_ms'),
         ]);
 
@@ -120,8 +118,8 @@ final class HttpClientCollector extends AbstractCollector implements DataCollect
 
         return $this->panel(
             'http_client',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'count')),
         );

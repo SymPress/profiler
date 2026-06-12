@@ -12,19 +12,19 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class PluginThemeCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'plugins';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Plugins / Theme';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
-        return 'wordpress';
+        return 'WordPress';
     }
 
     public function collect(ProfileContext $context): array
@@ -34,18 +34,16 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         $this->loadPluginApi();
 
         return [
-            'active_plugins' => $this->activePlugins(),
+            'active_plugins'  => $this->activePlugins(),
             'network_plugins' => $this->networkPlugins(),
-            'plugins' => $this->plugins(),
-            'mu_plugins' => $this->muPlugins(),
-            'dropins' => $this->dropins(),
-            'theme' => $this->theme(),
+            'plugins'         => $this->plugins(),
+            'mu_plugins'      => $this->muPlugins(),
+            'dropins'         => $this->dropins(),
+            'theme'           => $this->theme(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $activeCount = count($this->activePluginRows($payload));
@@ -60,9 +58,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -117,20 +113,20 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
             . '</div>';
         $html .= '<div id="plugins-theme" class="profiler-tab-target">'
             . Html::keyValueTable([
-                'Name' => $this->stringValue($theme, 'name'),
-                'Version' => $this->stringValue($theme, 'version'),
-                'Stylesheet' => $this->stringValue($theme, 'stylesheet'),
-                'Template' => $this->stringValue($theme, 'template'),
+                'Name'        => $this->stringValue($theme, 'name'),
+                'Version'     => $this->stringValue($theme, 'version'),
+                'Stylesheet'  => $this->stringValue($theme, 'stylesheet'),
+                'Template'    => $this->stringValue($theme, 'template'),
                 'Child theme' => Html::dumpValue($this->boolValue($theme, 'child')),
-                'Theme root' => $this->stringValue($theme, 'theme_root'),
-                'Parent' => Html::dumpValue($theme['parent'] ?? []),
+                'Theme root'  => $this->stringValue($theme, 'theme_root'),
+                'Parent'      => Html::dumpValue($theme['parent'] ?? []),
             ], 'Name', 'Value')
             . '</div>';
 
         return $this->panel(
             'plugins',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', count($this->activePluginRows($payload))),
         );
@@ -144,14 +140,14 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
 
         $file = defined('ABSPATH') ? ABSPATH . 'wp-admin/includes/plugin.php' : '';
 
-        if ($file !== '' && is_file($file)) {
-            require_once $file;
+        if ($file === '' || !is_file($file)) {
+            return;
         }
+
+        require_once $file;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function activePlugins(): array
     {
         $plugins = function_exists('get_option') ? get_option('active_plugins', []) : [];
@@ -159,9 +155,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         return $this->stringList($plugins);
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function networkPlugins(): array
     {
         $plugins = function_exists('get_site_option') ? get_site_option('active_sitewide_plugins', []) : [];
@@ -169,9 +163,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         return is_array($plugins) ? array_map('strval', array_keys($plugins)) : [];
     }
 
-    /**
-     * @return list<array{name: string, version: string, author: string, file: string, status: string}>
-     */
+    /** @return list<array{name: string, version: string, author: string, file: string, status: string}> */
     private function plugins(): array
     {
         if (!function_exists('get_plugins')) {
@@ -192,11 +184,11 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
             }
 
             $rows[] = [
-                'name' => $this->stringValue($data, 'Name', (string) $file),
+                'name'    => $this->stringValue($data, 'Name', (string) $file),
                 'version' => $this->stringValue($data, 'Version'),
-                'author' => $this->stringValue($data, 'Author'),
-                'file' => (string) $file,
-                'status' => $status,
+                'author'  => $this->stringValue($data, 'Author'),
+                'file'    => (string) $file,
+                'status'  => $status,
             ];
         }
 
@@ -205,9 +197,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         return $rows;
     }
 
-    /**
-     * @return list<array{name: string, version: string, author: string, file: string}>
-     */
+    /** @return list<array{name: string, version: string, author: string, file: string}> */
     private function muPlugins(): array
     {
         if (!function_exists('get_mu_plugins')) {
@@ -218,19 +208,17 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
 
         foreach (get_mu_plugins() as $file => $data) {
             $rows[] = [
-                'name' => $this->stringValue($data, 'Name', (string) $file),
+                'name'    => $this->stringValue($data, 'Name', (string) $file),
                 'version' => $this->stringValue($data, 'Version'),
-                'author' => $this->stringValue($data, 'Author'),
-                'file' => (string) $file,
+                'author'  => $this->stringValue($data, 'Author'),
+                'file'    => (string) $file,
             ];
         }
 
         return $rows;
     }
 
-    /**
-     * @return list<array{name: string, file: string, description: string}>
-     */
+    /** @return list<array{name: string, file: string, description: string}> */
     private function dropins(): array
     {
         if (!function_exists('get_dropins')) {
@@ -241,8 +229,8 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
 
         foreach (get_dropins() as $file => $data) {
             $rows[] = [
-                'name' => $this->stringValue($data, 'Name', (string) $file),
-                'file' => (string) $file,
+                'name'        => $this->stringValue($data, 'Name', (string) $file),
+                'file'        => (string) $file,
                 'description' => $this->stringValue($data, 'Description'),
             ];
         }
@@ -250,9 +238,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         return $rows;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function theme(): array
     {
         if (!function_exists('wp_get_theme')) {
@@ -263,16 +249,16 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         $parent = $theme->parent();
 
         return [
-            'name' => (string) $theme->get('Name'),
-            'version' => (string) $theme->get('Version'),
+            'name'       => (string) $theme->get('Name'),
+            'version'    => (string) $theme->get('Version'),
             'stylesheet' => (string) $theme->get_stylesheet(),
-            'template' => (string) $theme->get_template(),
+            'template'   => (string) $theme->get_template(),
             'theme_root' => (string) $theme->get_theme_root(),
-            'child' => $parent !== false,
-            'parent' => is_object($parent)
+            'child'      => $parent !== false,
+            'parent'     => is_object($parent)
                 ? [
-                    'name' => (string) $parent->get('Name'),
-                    'version' => (string) $parent->get('Version'),
+                    'name'       => (string) $parent->get('Name'),
+                    'version'    => (string) $parent->get('Version'),
                     'stylesheet' => (string) $parent->get_stylesheet(),
                 ]
                 : [],
@@ -350,9 +336,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         return $rows;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function stringList(mixed $value): array
     {
         if (!is_array($value)) {
@@ -362,9 +346,11 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
         $strings = [];
 
         foreach ($value as $item) {
-            if (is_scalar($item) || $item instanceof \Stringable) {
-                $strings[] = (string) $item;
+            if (!is_scalar($item) && !($item instanceof \Stringable)) {
+                continue;
             }
+
+            $strings[] = (string) $item;
         }
 
         return $strings;

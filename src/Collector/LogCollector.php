@@ -21,17 +21,17 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'logs';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Logs';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'logger';
     }
@@ -48,30 +48,28 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
 
             $channel = $this->stringValue($entry, 'channel');
 
-            if ($channel !== '') {
-                $channels[$channel] = true;
+            if ($channel === '') {
+                continue;
             }
+
+            $channels[$channel] = true;
         }
 
         return [
-            'count' => count($entries),
-            'counts' => $counts,
+            'count'    => count($entries),
+            'counts'   => $counts,
             'channels' => array_keys($channels),
-            'entries' => $entries,
+            'entries'  => $entries,
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
     {
         return null;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $entries = $payload['entries'] ?? [];
@@ -118,8 +116,8 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
 
         return $this->panel(
             'logs',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'count')),
         );
@@ -139,17 +137,17 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
                 continue;
             }
 
-            if (in_array($this->stringValue($entry, 'level', 'info'), $levels, true)) {
-                $matches[] = $entry;
+            if (!in_array($this->stringValue($entry, 'level', 'info'), $levels, true)) {
+                continue;
             }
+
+            $matches[] = $entry;
         }
 
         return $matches;
     }
 
-    /**
-     * @param array<array-key, mixed> $entries
-     */
+    /** @param array<array-key, mixed> $entries */
     private function renderLogEntries(array $entries, string $emptyMessage): string
     {
         $rows = [];
@@ -187,9 +185,7 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
             : Html::table(['Time', 'Level', 'Channel', 'Message'], $rows);
     }
 
-    /**
-     * @return list<array<string, mixed>>
-     */
+    /** @return list<array<string, mixed>> */
     private function logEntries(): array
     {
         $entries = [];
@@ -213,9 +209,11 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
         $normalized = [];
 
         foreach ($entries as $entry) {
-            if (is_array($entry)) {
-                $normalized[] = $this->normalizeEntry($entry);
+            if (!is_array($entry)) {
+                continue;
             }
+
+            $normalized[] = $this->normalizeEntry($entry);
         }
 
         usort(
@@ -236,23 +234,21 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
     private function normalizeEntry(array $entry): array
     {
         return [
-            'type' => $this->intValue($entry, 'type'),
-            'label' => $this->stringValue($entry, 'label', strtoupper($this->stringValue($entry, 'level', 'info'))),
-            'level' => strtolower($this->stringValue($entry, 'level', 'info')),
-            'message' => $this->stringValue($entry, 'message'),
-            'file' => $this->stringValue($entry, 'file'),
-            'line' => $this->intValue($entry, 'line'),
+            'type'        => $this->intValue($entry, 'type'),
+            'label'       => $this->stringValue($entry, 'label', strtoupper($this->stringValue($entry, 'level', 'info'))),
+            'level'       => strtolower($this->stringValue($entry, 'level', 'info')),
+            'message'     => $this->stringValue($entry, 'message'),
+            'file'        => $this->stringValue($entry, 'file'),
+            'line'        => $this->intValue($entry, 'line'),
             'captured_at' => $this->stringValue($entry, 'captured_at', gmdate(DATE_ATOM)),
-            'source' => $this->stringValue($entry, 'source', 'runtime'),
-            'channel' => $this->stringValue($entry, 'channel', 'app'),
-            'context' => is_array($entry['context'] ?? null) ? $entry['context'] : [],
-            'extra' => is_array($entry['extra'] ?? null) ? $entry['extra'] : [],
+            'source'      => $this->stringValue($entry, 'source', 'runtime'),
+            'channel'     => $this->stringValue($entry, 'channel', 'app'),
+            'context'     => is_array($entry['context'] ?? null) ? $entry['context'] : [],
+            'extra'       => is_array($entry['extra'] ?? null) ? $entry['extra'] : [],
         ];
     }
 
-    /**
-     * @param array<array-key, mixed> $entry
-     */
+    /** @param array<array-key, mixed> $entry */
     private function metadataHtml(array $entry): string
     {
         $context = is_array($entry['context'] ?? null) ? $entry['context'] : [];
@@ -298,7 +294,7 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
     {
         try {
             $date = new \DateTimeImmutable($value);
-        } catch (\Exception) {
+        } catch (\Throwable) {
             return $value;
         }
 

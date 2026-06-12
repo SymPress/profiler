@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class LocalizationCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'localization';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Translation';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'translation';
     }
@@ -36,19 +36,17 @@ final class LocalizationCollector extends AbstractCollector implements DataColle
         sort($domains);
 
         return [
-            'locale' => function_exists('get_locale') ? (string) get_locale() : '',
+            'locale'          => function_exists('get_locale') ? (string) get_locale() : '',
             'fallback_locale' => '',
-            'is_rtl' => function_exists('is_rtl') ? is_rtl() : false,
-            'timezone' => function_exists('wp_timezone_string') ? (string) wp_timezone_string() : '',
-            'loaded_domains' => $domains,
-            'domain_count' => count($domains),
-            'captured_at' => $context->finishedAtIso(),
+            'is_rtl'          => function_exists('is_rtl') ? is_rtl() : false,
+            'timezone'        => function_exists('wp_timezone_string') ? (string) wp_timezone_string() : '',
+            'loaded_domains'  => $domains,
+            'domain_count'    => count($domains),
+            'captured_at'     => $context->finishedAtIso(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $count = $this->intValue($payload, 'domain_count');
@@ -63,9 +61,7 @@ final class LocalizationCollector extends AbstractCollector implements DataColle
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $domainRows = [];
@@ -110,8 +106,8 @@ final class LocalizationCollector extends AbstractCollector implements DataColle
 
         return $this->panel(
             'localization',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'domain_count')),
         );

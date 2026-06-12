@@ -20,17 +20,17 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'request';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Request / Response';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'request';
     }
@@ -42,42 +42,40 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         $responseHeaders = $context->responseHeaders();
 
         return [
-            'method' => $requestMethod,
-            'uri' => $requestUri,
-            'url' => $this->currentUrl(),
-            'ip' => $this->serverValue('REMOTE_ADDR'),
-            'user_agent' => $this->serverValue('HTTP_USER_AGENT'),
-            'referer' => $this->serverValue('HTTP_REFERER'),
-            'content_type' => $this->serverValue('CONTENT_TYPE'),
-            'context' => $this->contextLabel(),
-            'context_flags' => $this->contextFlags(),
-            'status_code' => $context->statusCode(),
-            'status_text' => $this->statusText($context->statusCode()),
-            'started_at' => $context->startedAtIso(),
-            'finished_at' => $context->finishedAtIso(),
-            'duration_ms' => $context->durationMs(),
-            'memory_mb' => $context->memoryMb(),
-            'peak_memory_mb' => $context->peakMemoryMb(),
-            'template' => $context->template(),
-            'request_headers' => $this->requestHeaders(),
-            'response_headers' => $responseHeaders,
+            'method'                => $requestMethod,
+            'uri'                   => $requestUri,
+            'url'                   => $this->currentUrl(),
+            'ip'                    => $this->serverValue('REMOTE_ADDR'),
+            'user_agent'            => $this->serverValue('HTTP_USER_AGENT'),
+            'referer'               => $this->serverValue('HTTP_REFERER'),
+            'content_type'          => $this->serverValue('CONTENT_TYPE'),
+            'context'               => $this->contextLabel(),
+            'context_flags'         => $this->contextFlags(),
+            'status_code'           => $context->statusCode(),
+            'status_text'           => $this->statusText($context->statusCode()),
+            'started_at'            => $context->startedAtIso(),
+            'finished_at'           => $context->finishedAtIso(),
+            'duration_ms'           => $context->durationMs(),
+            'memory_mb'             => $context->memoryMb(),
+            'peak_memory_mb'        => $context->peakMemoryMb(),
+            'template'              => $context->template(),
+            'request_headers'       => $this->requestHeaders(),
+            'response_headers'      => $responseHeaders,
             'response_content_type' => $responseHeaders['content-type'] ?? '',
             // phpcs:disable WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing
-            'query' => $this->requestArray($_GET),
-            'post' => $this->requestArray($_POST),
-            'cookies' => $this->requestArray($_COOKIE),
-            'files' => $this->filesArray($_FILES),
+            'query'                 => $this->requestArray($_GET),
+            'post'                  => $this->requestArray($_POST),
+            'cookies'               => $this->requestArray($_COOKIE),
+            'files'                 => $this->filesArray($_FILES),
             // phpcs:enable WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing
-            'server' => $this->serverParameters(),
-            'user' => $this->currentUser(),
-            'throwables' => $context->throwables(),
-            'php_error' => $this->lastPhpError(),
+            'server'                => $this->serverParameters(),
+            'user'                  => $this->currentUser(),
+            'throwables'            => $context->throwables(),
+            'php_error'             => $this->lastPhpError(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $duration = $this->floatValue($payload, 'duration_ms');
@@ -95,9 +93,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $query = $this->arrayPayload($payload, 'query');
@@ -123,11 +119,11 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
 
         $responseHtml = Html::section('Response Headers', Html::keyValueTable($this->dumpedArray($responseHeaders), 'Header', 'Value'));
         $responseHtml .= Html::section('Response Metadata', Html::keyValueTable($this->dumpedArray([
-            'status_code' => $this->intValue($payload, 'status_code', 200),
-            'status_text' => $this->stringValue($payload, 'status_text'),
-            'content_type' => $this->stringValue($payload, 'response_content_type'),
-            'duration_ms' => $this->floatValue($payload, 'duration_ms'),
-            'memory_mb' => $this->floatValue($payload, 'memory_mb'),
+            'status_code'    => $this->intValue($payload, 'status_code', 200),
+            'status_text'    => $this->stringValue($payload, 'status_text'),
+            'content_type'   => $this->stringValue($payload, 'response_content_type'),
+            'duration_ms'    => $this->floatValue($payload, 'duration_ms'),
+            'memory_mb'      => $this->floatValue($payload, 'memory_mb'),
             'peak_memory_mb' => $this->floatValue($payload, 'peak_memory_mb'),
         ])));
 
@@ -143,8 +139,8 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
 
         return $this->panel(
             'request',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             (string) $this->intValue($payload, 'status_code', 200),
         );
@@ -184,13 +180,13 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     {
         $attributes = [
             '_stopwatch_token' => Html::dumpValue($profile->token),
-            '_context' => Html::dumpValue($this->stringValue($payload, 'context')),
-            '_context_flags' => Html::dumpValue($this->stringList($this->arrayPayload($payload, 'context_flags'))),
-            '_template' => Html::dumpValue($this->stringValue($payload, 'template')),
-            '_started_at' => Html::dumpValue($this->stringValue($payload, 'started_at')),
-            '_finished_at' => Html::dumpValue($this->stringValue($payload, 'finished_at')),
-            '_ip' => Html::dumpValue($this->stringValue($payload, 'ip')),
-            '_user_agent' => Html::dumpValue($this->stringValue($payload, 'user_agent')),
+            '_context'         => Html::dumpValue($this->stringValue($payload, 'context')),
+            '_context_flags'   => Html::dumpValue($this->stringList($this->arrayPayload($payload, 'context_flags'))),
+            '_template'        => Html::dumpValue($this->stringValue($payload, 'template')),
+            '_started_at'      => Html::dumpValue($this->stringValue($payload, 'started_at')),
+            '_finished_at'     => Html::dumpValue($this->stringValue($payload, 'finished_at')),
+            '_ip'              => Html::dumpValue($this->stringValue($payload, 'ip')),
+            '_user_agent'      => Html::dumpValue($this->stringValue($payload, 'user_agent')),
         ];
 
         $user = $payload['user'] ?? null;
@@ -210,9 +206,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         return $attributes;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     private function requestTitle(array $payload): string
     {
         $template = $this->stringValue($payload, 'template');
@@ -227,9 +221,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         return sprintf('%s %s', strtoupper($method), $uri);
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     private function requestHeaders(): array
     {
         $headers = [];
@@ -262,9 +254,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         return $this->sanitizer->sanitizeArray($files);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function serverParameters(): array
     {
         $server = [];
@@ -287,9 +277,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         return $normalized;
     }
 
-    /**
-     * @return array{id: int, login: string, roles: list<string>}|null
-     */
+    /** @return array{id: int, login: string, roles: list<string>}|null */
     private function currentUser(): ?array
     {
         if (!function_exists('is_user_logged_in') || !is_user_logged_in() || !function_exists('wp_get_current_user')) {
@@ -300,15 +288,13 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         $roles = array_values($user->roles);
 
         return [
-            'id' => (int) $user->ID,
+            'id'    => (int) $user->ID,
             'login' => (string) ($user->user_login ?? ''),
             'roles' => $roles,
         ];
     }
 
-    /**
-     * @return array{type: int, message: string, file: string, line: int}|null
-     */
+    /** @return array{type: int, message: string, file: string, line: int}|null */
     private function lastPhpError(): ?array
     {
         $error = error_get_last();
@@ -318,10 +304,10 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         }
 
         return [
-            'type' => (int) $error['type'],
+            'type'    => (int) $error['type'],
             'message' => (string) $error['message'],
-            'file' => (string) $error['file'],
-            'line' => (int) $error['line'],
+            'file'    => (string) $error['file'],
+            'line'    => (int) $error['line'],
         ];
     }
 
@@ -354,29 +340,29 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         };
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function contextFlags(): array
     {
         $flags = [];
 
         foreach (
             [
-                WpContext::CORE => $this->context->isCore(),
+                WpContext::CORE        => $this->context->isCore(),
                 WpContext::FRONTOFFICE => $this->context->isFrontoffice(),
-                WpContext::BACKOFFICE => $this->context->isBackoffice(),
-                WpContext::AJAX => $this->context->isAjax(),
-                WpContext::LOGIN => $this->context->isLogin(),
-                WpContext::REST => $this->context->isRest(),
-                WpContext::CRON => $this->context->isCron(),
-                WpContext::CLI => $this->context->isWpCli(),
-                WpContext::XML_RPC => $this->context->isXmlRpc(),
+                WpContext::BACKOFFICE  => $this->context->isBackoffice(),
+                WpContext::AJAX        => $this->context->isAjax(),
+                WpContext::LOGIN       => $this->context->isLogin(),
+                WpContext::REST        => $this->context->isRest(),
+                WpContext::CRON        => $this->context->isCron(),
+                WpContext::CLI         => $this->context->isWpCli(),
+                WpContext::XML_RPC     => $this->context->isXmlRpc(),
             ] as $name => $active
         ) {
-            if ($active) {
-                $flags[] = $name;
+            if (!$active) {
+                continue;
             }
+
+            $flags[] = $name;
         }
 
         return $flags;
@@ -423,9 +409,11 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         $normalized = [];
 
         foreach ($values as $value) {
-            if (is_scalar($value) || $value instanceof \Stringable) {
-                $normalized[] = (string) $value;
+            if (!is_scalar($value) && !($value instanceof \Stringable)) {
+                continue;
             }
+
+            $normalized[] = (string) $value;
         }
 
         return $normalized;

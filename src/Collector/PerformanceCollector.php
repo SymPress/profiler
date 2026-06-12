@@ -20,17 +20,17 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'performance';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Performance';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'performance';
     }
@@ -48,18 +48,16 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
 
         return [
             'total_duration_ms' => $totalDuration,
-            'bootstrap_ms' => $bootstrapMs,
-            'runtime_ms' => $runtimeMs,
-            'render_ms' => $renderMs,
-            'peak_memory_mb' => $context->peakMemoryMb(),
-            'timeline' => $events,
-            'stopwatch' => $this->stopwatch->events(),
+            'bootstrap_ms'      => $bootstrapMs,
+            'runtime_ms'        => $runtimeMs,
+            'render_ms'         => $renderMs,
+            'peak_memory_mb'    => $context->peakMemoryMb(),
+            'timeline'          => $events,
+            'stopwatch'         => $this->stopwatch->events(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $total = $this->floatValue($payload, 'total_duration_ms');
@@ -76,9 +74,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $timeline = $this->timelinePayload($payload);
@@ -104,16 +100,14 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
 
         return $this->panel(
             'performance',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%.1f ms', $this->floatValue($payload, 'total_duration_ms')),
         );
     }
 
-    /**
-     * @return list<array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float}>
-     */
+    /** @return list<array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float}> */
     private function timeline(ProfileContext $context): array
     {
         $events = $this->lifecycle->events();
@@ -128,11 +122,11 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
                 : $context->finishedAt();
 
             $timeline[] = [
-                'name' => $event['name'],
-                'started_at' => $eventStartedAt,
-                'memory_mb' => $event['memory_mb'],
-                'detail' => $event['detail'],
-                'started_ms' => round(($eventStartedAt - $startedAt) * 1000, 2),
+                'name'        => $event['name'],
+                'started_at'  => $eventStartedAt,
+                'memory_mb'   => $event['memory_mb'],
+                'detail'      => $event['detail'],
+                'started_ms'  => round(($eventStartedAt - $startedAt) * 1000, 2),
                 'duration_ms' => max(0.0, round(($nextStartedAt - $eventStartedAt) * 1000, 2)),
             ];
         }
@@ -140,9 +134,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         return $timeline;
     }
 
-    /**
-     * @param list<array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float}> $events
-     */
+    /** @param list<array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float}> $events */
     private function eventStartedAt(array $events, string $name): ?float
     {
         foreach ($events as $event) {
@@ -174,11 +166,11 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
             }
 
             $normalized[] = [
-                'name' => $this->stringValue($event, 'name'),
-                'started_at' => $this->floatValue($event, 'started_at'),
-                'memory_mb' => $this->floatValue($event, 'memory_mb'),
-                'detail' => $this->stringValue($event, 'detail'),
-                'started_ms' => $this->floatValue($event, 'started_ms'),
+                'name'        => $this->stringValue($event, 'name'),
+                'started_at'  => $this->floatValue($event, 'started_at'),
+                'memory_mb'   => $this->floatValue($event, 'memory_mb'),
+                'detail'      => $this->stringValue($event, 'detail'),
+                'started_ms'  => $this->floatValue($event, 'started_ms'),
                 'duration_ms' => $this->floatValue($event, 'duration_ms'),
             ];
         }
@@ -199,6 +191,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         array $databasePayload,
         array $stopwatchEvents,
     ): string {
+
         if ($timeline === []) {
             return Html::emptyPanel('No lifecycle events were captured.');
         }
@@ -269,21 +262,21 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
                     }
 
                     $periods[] = [
-                        'started_at' => $this->floatValue($period, 'started_at'),
-                        'stopped_at' => $this->floatValue($period, 'stopped_at'),
+                        'started_at'  => $this->floatValue($period, 'started_at'),
+                        'stopped_at'  => $this->floatValue($period, 'stopped_at'),
                         'duration_ms' => $this->floatValue($period, 'duration_ms'),
-                        'memory_mb' => $this->floatValue($period, 'memory_mb'),
+                        'memory_mb'   => $this->floatValue($period, 'memory_mb'),
                     ];
                 }
             }
 
             $normalized[] = [
-                'name' => $this->stringValue($event, 'name'),
-                'category' => $this->stringValue($event, 'category', 'default'),
-                'started_at' => $this->floatValue($event, 'started_at'),
+                'name'        => $this->stringValue($event, 'name'),
+                'category'    => $this->stringValue($event, 'category', 'default'),
+                'started_at'  => $this->floatValue($event, 'started_at'),
                 'duration_ms' => $this->floatValue($event, 'duration_ms'),
-                'memory_mb' => $this->floatValue($event, 'memory_mb'),
-                'periods' => $periods,
+                'memory_mb'   => $this->floatValue($event, 'memory_mb'),
+                'periods'     => $periods,
             ];
         }
 
@@ -303,15 +296,18 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         array $databasePayload,
         array $stopwatchEvents,
     ): array {
+
         $duration = max(1.0, $totalDuration);
         $requestStartedAt = $timeline[0]['started_at'] - ($timeline[0]['started_ms'] / 1000);
-        $events = [[
-            'name' => 'request',
-            'category' => 'section',
-            'start_ms' => 0.0,
+        $events = [
+        [
+            'name'        => 'request',
+            'category'    => 'section',
+            'start_ms'    => 0.0,
             'duration_ms' => $duration,
-            'memory_mb' => $peakMemory,
-        ]];
+            'memory_mb'   => $peakMemory,
+        ],
+        ];
 
         foreach ($timeline as $event) {
             $name = $this->timelineEventName($event);
@@ -323,11 +319,11 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
             }
 
             $events[] = [
-                'name' => $name,
-                'category' => $this->timelineCategory($event['name']),
-                'start_ms' => $startedMs,
+                'name'        => $name,
+                'category'    => $this->timelineCategory($event['name']),
+                'start_ms'    => $startedMs,
                 'duration_ms' => min($eventDuration, max(0.0, $duration - $startedMs)),
-                'memory_mb' => $event['memory_mb'],
+                'memory_mb'   => $event['memory_mb'],
             ];
         }
 
@@ -366,11 +362,11 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
 
                 $periodSuffix = count($event['periods']) > 1 ? ' #' . ($index + 1) : '';
                 $events[] = [
-                    'name' => $event['name'] . $periodSuffix,
-                    'category' => $event['category'] !== '' ? $event['category'] : 'default',
-                    'start_ms' => $startedMs,
+                    'name'        => $event['name'] . $periodSuffix,
+                    'category'    => $event['category'] !== '' ? $event['category'] : 'default',
+                    'start_ms'    => $startedMs,
                     'duration_ms' => min($durationMs, max(0.0, $totalDuration - $startedMs)),
-                    'memory_mb' => $period['memory_mb'],
+                    'memory_mb'   => $period['memory_mb'],
                 ];
             }
         }
@@ -378,9 +374,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         return $events;
     }
 
-    /**
-     * @param array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float} $event
-     */
+    /** @param array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float} $event */
     private function timelineEventName(array $event): string
     {
         if ($event['name'] === 'template_include' && $event['detail'] !== '') {
@@ -426,11 +420,11 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
             }
 
             $events[] = [
-                'name' => $this->databaseTimelineName($this->stringValue($query, 'sql')),
-                'category' => 'doctrine',
-                'start_ms' => $startedMs,
+                'name'        => $this->databaseTimelineName($this->stringValue($query, 'sql')),
+                'category'    => 'doctrine',
+                'start_ms'    => $startedMs,
                 'duration_ms' => min($durationMs, max(0.0, $totalDuration - $startedMs)),
-                'memory_mb' => 0.0,
+                'memory_mb'   => 0.0,
             ];
         }
 
@@ -450,9 +444,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         return $preview === $normalized ? $preview : $preview . '...';
     }
 
-    /**
-     * @param list<array{name: string, category: string, start_ms: float, duration_ms: float, memory_mb: float}> $events
-     */
+    /** @param list<array{name: string, category: string, start_ms: float, duration_ms: float, memory_mb: float}> $events */
     private function renderTimelineLegend(array $events): string
     {
         $present = [];
@@ -492,9 +484,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         return $html . '</div>';
     }
 
-    /**
-     * @param list<array{name: string, category: string, start_ms: float, duration_ms: float, memory_mb: float}> $events
-     */
+    /** @param list<array{name: string, category: string, start_ms: float, duration_ms: float, memory_mb: float}> $events */
     private function renderTimelineSvg(array $events): string
     {
         $svgWidth = 1000.0;
@@ -554,9 +544,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         return $html;
     }
 
-    /**
-     * @param array{name: string, category: string, start_ms: float, duration_ms: float, memory_mb: float} $event
-     */
+    /** @param array{name: string, category: string, start_ms: float, duration_ms: float, memory_mb: float} $event */
     private function renderTimelineSvgEvent(
         array $event,
         float $totalDuration,
@@ -564,8 +552,9 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         float $y,
         bool $visible,
     ): string {
-        $start = ($event['start_ms'] / $totalDuration) * $svgWidth;
-        $width = max(1.0, ($event['duration_ms'] / $totalDuration) * $svgWidth);
+
+        $start = $event['start_ms'] / $totalDuration * $svgWidth;
+        $width = max(1.0, $event['duration_ms'] / $totalDuration * $svgWidth);
         $end = min($svgWidth, $start + $width);
         $estimatedLabelWidth = min(520, (strlen($event['name']) * 7) + 110);
         $alignLeft = $start + $estimatedLabelWidth <= $svgWidth;
@@ -661,9 +650,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         };
     }
 
-    /**
-     * @param list<array{name: string, category: string, started_at: float, duration_ms: float, memory_mb: float, periods: list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>}> $events
-     */
+    /** @param list<array{name: string, category: string, started_at: float, duration_ms: float, memory_mb: float, periods: list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>}> $events */
     private function renderStopwatchEvents(array $events): string
     {
         if ($events === []) {

@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class OptionsCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'options';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Options';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'config';
     }
@@ -40,25 +40,23 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
             $bytes = strlen($this->serializeValue($value));
             $totalBytes += $bytes;
             $autoloadRows[] = [
-                'name' => (string) $name,
+                'name'  => (string) $name,
                 'bytes' => $bytes,
-                'type' => get_debug_type($value),
+                'type'  => get_debug_type($value),
             ];
         }
 
         usort($autoloadRows, static fn (array $left, array $right): int => $right['bytes'] <=> $left['bytes']);
 
         return [
-            'autoload_count' => count($autoloaded),
-            'autoload_bytes' => $totalBytes,
+            'autoload_count'     => count($autoloaded),
+            'autoload_bytes'     => $totalBytes,
             'largest_autoloaded' => array_slice($autoloadRows, 0, 50),
-            'transients' => $this->transients(),
+            'transients'         => $this->transients(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         return new ToolbarBlock(
@@ -71,9 +69,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -121,16 +117,14 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
 
         return $this->panel(
             'options',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             $this->formatBytes($this->intValue($payload, 'autoload_bytes')),
         );
     }
 
-    /**
-     * @return list<array{name: string, bytes: int, autoload: string}>
-     */
+    /** @return list<array{name: string, bytes: int, autoload: string}> */
     private function transients(): array
     {
         $wpdb = $GLOBALS['wpdb'] ?? null;
@@ -161,8 +155,8 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
             }
 
             $rows[] = [
-                'name' => $this->stringValue($row, 'option_name'),
-                'bytes' => $this->intValue($row, 'bytes'),
+                'name'     => $this->stringValue($row, 'option_name'),
+                'bytes'    => $this->intValue($row, 'bytes'),
                 'autoload' => $this->stringValue($row, 'autoload'),
             ];
         }
@@ -190,9 +184,9 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
             }
 
             $rows[] = [
-                'name' => $this->stringValue($option, 'name'),
+                'name'  => $this->stringValue($option, 'name'),
                 'bytes' => $this->intValue($option, 'bytes'),
-                'type' => $this->stringValue($option, 'type'),
+                'type'  => $this->stringValue($option, 'type'),
             ];
         }
 
@@ -219,8 +213,8 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
             }
 
             $rows[] = [
-                'name' => $this->stringValue($transient, 'name'),
-                'bytes' => $this->intValue($transient, 'bytes'),
+                'name'     => $this->stringValue($transient, 'name'),
+                'bytes'    => $this->intValue($transient, 'bytes'),
                 'autoload' => $this->stringValue($transient, 'autoload'),
             ];
         }
