@@ -2,7 +2,7 @@
 <ruleset name="Profiler MU Plugin">
     <description>
         WordPress and security-focused coding standard audit for the profiler MU plugin.
-        Auto-formatting stays in PHP CS Fixer; PHPCS enforces the Inpsyde standard.
+        Auto-formatting stays in PHP CS Fixer; PHPCS enforces the SymPress standard.
     </description>
 
     <arg name="colors"/>
@@ -28,19 +28,34 @@
     <exclude-pattern>src/Value/ToolbarBlock.php</exclude-pattern>
     <exclude-pattern>src/Collector/CollectorPanel.php</exclude-pattern>
 
-    <rule ref="Inpsyde">
-        <exclude name="Inpsyde.CodeQuality.NoAccessors"/>
-        <exclude name="Inpsyde.CodeQuality.LineLength"/>
-        <exclude name="Inpsyde.CodeQuality.NestingLevel.High"/>
+    <rule ref="SymPress-WordPress">
+        <exclude name="SymPress.Classes.AccessorNaming"/>
+        <exclude name="SymPress.Files.LineLength"/>
+        <exclude name="SymPress.Complexity.NestingLevel.High"/>
         <exclude name="Generic.Metrics.CyclomaticComplexity"/>
-        <exclude name="Inpsyde.CodeQuality.NoElse"/>
+        <exclude name="SymPress.ControlStructures.DisallowElse"/>
         <exclude name="WordPress.PHP.DevelopmentFunctions.error_log_trigger_error"/>
         <exclude name="WordPress.PHP.DevelopmentFunctions.error_log_var_export"/>
         <exclude name="WordPress.PHP.POSIXFunctions"/>
         <exclude name="PSR1.Files.SideEffects.FoundWithSymbols"/>
+        <exclude name="Generic.PHP.ForbiddenFunctions.Found" />
+        <exclude name="SlevomatCodingStandard.Classes.ForbiddenPublicProperty.ForbiddenPublicProperty" />
+        <exclude name="SlevomatCodingStandard.ControlStructures.UselessIfConditionWithReturn.UselessIfCondition" />
+        <exclude name="SlevomatCodingStandard.Functions.UnusedParameter.UnusedParameter" />
+        <exclude name="SlevomatCodingStandard.Variables.DisallowSuperGlobalVariable.DisallowedSuperGlobalVariable" />
+        <exclude name="Squiz.PHP.GlobalKeyword.NotAllowed" />
+        <exclude name="SymPress.Classes.PropertyLimit.TooManyProperties" />
+        <exclude name="SymPress.Functions.FunctionLength.TooLong" />
+        <exclude name="SymPress.NamingConventions.ElementNameMinimalLength.TooShort" />
+        <exclude name="SymPress.Variables.RedundantAssignment.Found" />
+        <exclude name="WordPress.DB.PreparedSQL.InterpolatedNotPrepared" />
+        <exclude name="WordPress.PHP.NoSilencedErrors.Discouraged" />
+        <exclude name="WordPress.Security.NonceVerification.Missing" />
+        <exclude name="WordPress.Security.NonceVerification.Recommended" />
+        <exclude name="WordPress.WP.AlternativeFunctions.file_system_operations_is_writable" />
     </rule>
 
-    <rule ref="Inpsyde.CodeQuality.Psr4">
+    <rule ref="SymPress.Namespaces.Psr4">
         <properties>
             <property name="psr4" type="array">
                 <element key="SymPress\Profiler" value="src"/>
