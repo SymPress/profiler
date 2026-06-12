@@ -13,13 +13,9 @@ interface ProfileStorageInterface
 
     public function load(string $token): ?ProfileRecord;
 
-    /**
-     * @return list<ProfileRecord>
-     */
+    /** @return list<ProfileRecord> */
     public function latest(int $limit = 20): array;
 
-    /**
-     * @return list<ProfileRecord>
-     */
+    /** @return list<ProfileRecord> */
     public function search(ProfileSearchCriteria $criteria): array;
 }

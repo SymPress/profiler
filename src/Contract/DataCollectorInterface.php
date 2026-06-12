@@ -11,24 +11,18 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 interface DataCollectorInterface
 {
-    public function key(): string;
+    public function getKey(): string;
 
-    public function label(): string;
+    public function getLabel(): string;
 
-    public function icon(): string;
+    public function getIcon(): string;
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function collect(ProfileContext $context): array;
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock;
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel;
 }
