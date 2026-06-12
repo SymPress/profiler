@@ -9,9 +9,7 @@ use SymPress\Profiler\Value\ProfileRecord;
 
 abstract class AbstractCollector
 {
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     protected function stringValue(array $payload, string $key, string $default = ''): string
     {
         $value = $payload[$key] ?? $default;
@@ -23,9 +21,7 @@ abstract class AbstractCollector
         return $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     protected function intValue(array $payload, string $key, int $default = 0): int
     {
         $value = $payload[$key] ?? $default;
@@ -33,9 +29,7 @@ abstract class AbstractCollector
         return is_numeric($value) ? (int) $value : $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     protected function floatValue(array $payload, string $key, float $default = 0.0): float
     {
         $value = $payload[$key] ?? $default;
@@ -43,9 +37,7 @@ abstract class AbstractCollector
         return is_numeric($value) ? (float) $value : $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     protected function boolValue(array $payload, string $key, bool $default = false): bool
     {
         $value = $payload[$key] ?? $default;
@@ -73,6 +65,7 @@ abstract class AbstractCollector
         string $metric = '',
         bool $enabled = true,
     ): CollectorPanel {
+
         $contents = $html !== ''
             ? $html
             : Html::emptyPanel('No data was captured for this panel.');

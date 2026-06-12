@@ -6,6 +6,7 @@ namespace SymPress\Profiler\Collector;
 
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Support\Html;
+use SymPress\Profiler\Support\HtmlString;
 use SymPress\Profiler\Value\ProfileContext;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ToolbarBlock;
@@ -14,17 +15,17 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
 {
     private const int MAX_QUERIES = 150;
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'database';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Doctrine';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'database';
     }
@@ -37,29 +38,27 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             ? (int) $wpdb->num_queries
             : 0;
         [
-            'queries' => $queries,
+            'queries'           => $queries,
             'duplicate_queries' => $duplicateRows,
-            'caller_breakdown' => $callerBreakdown,
+            'caller_breakdown'  => $callerBreakdown,
             'total_duration_ms' => $totalDuration,
         ] = $this->collectQueryData($wpdb);
 
         return [
-            'enabled' => defined('SAVEQUERIES') && SAVEQUERIES,
-            'count' => $numQueries,
+            'enabled'           => defined('SAVEQUERIES') && SAVEQUERIES,
+            'count'             => $numQueries,
             'total_duration_ms' => round($totalDuration, 2),
-            'last_error' => is_object($wpdb) ? $this->stringFromMixed($wpdb->last_error ?? '') : '',
-            'queries' => array_slice($queries, 0, self::MAX_QUERIES),
-            'slow_queries' => array_slice($queries, 0, 10),
+            'last_error'        => is_object($wpdb) ? $this->stringFromMixed($wpdb->last_error ?? '') : '',
+            'queries'           => array_slice($queries, 0, self::MAX_QUERIES),
+            'slow_queries'      => array_slice($queries, 0, 10),
             'duplicate_queries' => array_slice($duplicateRows, 0, 10),
-            'caller_breakdown' => array_slice($callerBreakdown, 0, 15),
-            'truncated' => count($queries) === self::MAX_QUERIES,
-            'captured_at' => $context->finishedAtIso(),
+            'caller_breakdown'  => array_slice($callerBreakdown, 0, 15),
+            'truncated'         => count($queries) === self::MAX_QUERIES,
+            'captured_at'       => $context->finishedAtIso(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $count = $this->intValue($payload, 'count');
@@ -76,9 +75,7 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $queryRows = [];
@@ -89,7 +86,7 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             $queryRows[] = [
                 $index + 1,
                 sprintf('%.2f ms', $query['duration_ms']),
-                new \SymPress\Profiler\Support\HtmlString(
+                new HtmlString(
                     '<div class="profiler-sql">'
                     . $this->highlightSql($query['sql'])
                     . '</div><div><strong>Caller:</strong> '
@@ -145,8 +142,8 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
 
         return $this->panel(
             'database',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'count')),
         );
@@ -184,10 +181,10 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             }
 
             $normalized[] = [
-                'sql' => $this->stringValue($query, 'sql'),
+                'sql'         => $this->stringValue($query, 'sql'),
                 'duration_ms' => $this->floatValue($query, 'duration_ms'),
-                'caller' => $this->stringValue($query, 'caller'),
-                'started_at' => $this->floatValue($query, 'started_at'),
+                'caller'      => $this->stringValue($query, 'caller'),
+                'started_at'  => $this->floatValue($query, 'started_at'),
             ];
         }
 
@@ -236,9 +233,9 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
 
         if (!is_object($wpdb) || !isset($wpdb->queries) || !is_array($wpdb->queries)) {
             return [
-                'queries' => [],
+                'queries'           => [],
                 'duplicate_queries' => [],
-                'caller_breakdown' => [],
+                'caller_breakdown'  => [],
                 'total_duration_ms' => 0.0,
             ];
         }
@@ -256,10 +253,10 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             $totalDuration += $durationMs;
 
             $queries[] = [
-                'sql' => $sql,
+                'sql'         => $sql,
                 'duration_ms' => $durationMs,
-                'caller' => $caller,
-                'started_at' => $startedAt,
+                'caller'      => $caller,
+                'started_at'  => $startedAt,
             ];
             $this->aggregateDuplicate($duplicates, $normalizedSql, $sql, $durationMs);
             $this->aggregateCaller($callerBreakdown, $caller, $durationMs);
@@ -284,30 +281,26 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
         );
 
         return [
-            'queries' => $queries,
+            'queries'           => $queries,
             'duplicate_queries' => $duplicateRows,
-            'caller_breakdown' => array_slice($callerBreakdown, 0, 15),
+            'caller_breakdown'  => array_slice($callerBreakdown, 0, 15),
             'total_duration_ms' => round($totalDuration, 2),
         ];
     }
 
-    /**
-     * @param array<string, array{count: int, duration_ms: float, sample: string}> $duplicates
-     */
+    /** @param array<string, array{count: int, duration_ms: float, sample: string}> $duplicates */
     private function aggregateDuplicate(array &$duplicates, string $normalizedSql, string $sql, float $durationMs): void
     {
         $duplicates[$normalizedSql] ??= [
-            'count' => 0,
+            'count'       => 0,
             'duration_ms' => 0.0,
-            'sample' => $sql,
+            'sample'      => $sql,
         ];
         $duplicates[$normalizedSql]['count']++;
         $duplicates[$normalizedSql]['duration_ms'] += $durationMs;
     }
 
-    /**
-     * @param list<array{caller: string, count: int, duration_ms: float}> $callerBreakdown
-     */
+    /** @param list<array{caller: string, count: int, duration_ms: float}> $callerBreakdown */
     private function aggregateCaller(array &$callerBreakdown, string $caller, float $durationMs): void
     {
         $key = $caller !== '' ? $caller : 'unknown';
@@ -324,8 +317,8 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
         }
 
         $callerBreakdown[] = [
-            'caller' => $key,
-            'count' => 1,
+            'caller'      => $key,
+            'count'       => 1,
             'duration_ms' => $durationMs,
         ];
     }

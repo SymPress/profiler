@@ -18,17 +18,17 @@ final class ExceptionCollector extends AbstractCollector implements DataCollecto
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'exceptions';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Exception';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'alert-circle';
     }
@@ -39,11 +39,11 @@ final class ExceptionCollector extends AbstractCollector implements DataCollecto
 
         foreach ($context->throwables() as $throwable) {
             $entries[] = [
-                'type' => 'throwable',
-                'class' => $throwable['class'],
+                'type'    => 'throwable',
+                'class'   => $throwable['class'],
                 'message' => $throwable['message'],
-                'file' => $throwable['file'],
-                'line' => $throwable['line'],
+                'file'    => $throwable['file'],
+                'line'    => $throwable['line'],
             ];
         }
 
@@ -51,31 +51,27 @@ final class ExceptionCollector extends AbstractCollector implements DataCollecto
 
         if (is_array($fatal)) {
             $entries[] = [
-                'type' => 'fatal',
-                'class' => $fatal['label'],
+                'type'    => 'fatal',
+                'class'   => $fatal['label'],
                 'message' => $fatal['message'],
-                'file' => $fatal['file'],
-                'line' => $fatal['line'],
+                'file'    => $fatal['file'],
+                'line'    => $fatal['line'],
             ];
         }
 
         return [
-            'count' => count($entries),
+            'count'   => count($entries),
             'entries' => $entries,
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
     {
         return null;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $entries = $payload['entries'] ?? [];
@@ -83,8 +79,8 @@ final class ExceptionCollector extends AbstractCollector implements DataCollecto
         if (!is_array($entries) || $entries === []) {
             return $this->panel(
                 'exceptions',
-                $this->label(),
-                $this->icon(),
+                $this->getLabel(),
+                $this->getIcon(),
                 Html::emptyPanel('No uncaught exceptions or fatal errors were captured.'),
                 enabled: false,
             );
@@ -113,8 +109,8 @@ final class ExceptionCollector extends AbstractCollector implements DataCollecto
 
         return $this->panel(
             'exceptions',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'count')),
         );

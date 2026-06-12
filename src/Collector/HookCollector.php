@@ -6,6 +6,7 @@ namespace SymPress\Profiler\Collector;
 
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Support\Html;
+use SymPress\Profiler\Support\HtmlString;
 use SymPress\Profiler\Value\ProfileContext;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ToolbarBlock;
@@ -14,17 +15,17 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
 {
     private const int MAX_HOOKS = 100;
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'hooks';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Events';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'event';
     }
@@ -45,16 +46,18 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
                 $priorityCount = count($hookObject->callbacks);
 
                 foreach ($hookObject->callbacks as $callbacks) {
-                    if (is_array($callbacks)) {
-                        $listenerCount += count($callbacks);
+                    if (!is_array($callbacks)) {
+                        continue;
                     }
+
+                    $listenerCount += count($callbacks);
                 }
             }
 
             $actions[] = [
-                'hook' => (string) $hook,
-                'count' => is_numeric($count) ? (int) $count : 0,
-                'listeners' => $listenerCount,
+                'hook'       => (string) $hook,
+                'count'      => is_numeric($count) ? (int) $count : 0,
+                'listeners'  => $listenerCount,
                 'priorities' => $priorityCount,
             ];
             $firedOrder[] = (string) $hook;
@@ -74,25 +77,25 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         );
 
         foreach ((array) ($GLOBALS['wp_current_filter'] ?? []) as $filter) {
-            if (is_scalar($filter) || $filter instanceof \Stringable) {
-                $currentStack[] = (string) $filter;
+            if (!is_scalar($filter) && !($filter instanceof \Stringable)) {
+                continue;
             }
+
+            $currentStack[] = (string) $filter;
         }
 
         return [
-            'fired_count' => count((array) ($GLOBALS['wp_actions'] ?? [])),
+            'fired_count'      => count((array) ($GLOBALS['wp_actions'] ?? [])),
             'registered_count' => count($registeredHooks),
-            'top_hooks' => array_slice($actions, 0, self::MAX_HOOKS),
+            'top_hooks'        => array_slice($actions, 0, self::MAX_HOOKS),
             'called_listeners' => $this->calledListeners($registeredHooks),
-            'fired_order' => array_slice($firedOrder, 0, self::MAX_HOOKS),
-            'current_stack' => $currentStack,
-            'captured_at' => $context->finishedAtIso(),
+            'fired_order'      => array_slice($firedOrder, 0, self::MAX_HOOKS),
+            'current_stack'    => $currentStack,
+            'captured_at'      => $context->finishedAtIso(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $topHooks = $this->topHooks($payload);
@@ -108,9 +111,7 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $rows = [];
@@ -118,7 +119,7 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         foreach ($this->topHooks($payload) as $hook) {
             $rows[] = [
                 $hook['priorities'],
-                new \SymPress\Profiler\Support\HtmlString(sprintf(
+                new HtmlString(sprintf(
                     '<strong>%s</strong><br><span class="text-muted">%d listener(s), fired %d time(s)</span>',
                     Html::escape($hook['hook']),
                     $hook['listeners'],
@@ -163,8 +164,8 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
 
         return $this->panel(
             'hooks',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'fired_count')),
         );
@@ -199,11 +200,11 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
                     $function = $callback['function'] ?? null;
                     $file = $this->callbackFile($function);
                     $rows[] = [
-                        'hook' => (string) $hook,
+                        'hook'     => (string) $hook,
                         'priority' => is_numeric($priority) ? (int) $priority : 0,
                         'callback' => $this->callbackName($function),
-                        'origin' => $this->originFromFile($file),
-                        'file' => $file,
+                        'origin'   => $this->originFromFile($file),
+                        'file'     => $file,
                     ];
 
                     if (count($rows) >= 250) {
@@ -236,9 +237,9 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
             }
 
             $normalized[] = [
-                'hook' => $this->stringValue($hook, 'hook'),
-                'count' => $this->intValue($hook, 'count'),
-                'listeners' => $this->intValue($hook, 'listeners'),
+                'hook'       => $this->stringValue($hook, 'hook'),
+                'count'      => $this->intValue($hook, 'count'),
+                'listeners'  => $this->intValue($hook, 'listeners'),
                 'priorities' => $this->intValue($hook, 'priorities'),
             ];
         }
@@ -261,9 +262,11 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         $normalized = [];
 
         foreach ($stack as $value) {
-            if (is_scalar($value) || $value instanceof \Stringable) {
-                $normalized[] = (string) $value;
+            if (!is_scalar($value) && !($value instanceof \Stringable)) {
+                continue;
             }
+
+            $normalized[] = (string) $value;
         }
 
         return $normalized;
@@ -289,11 +292,11 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
             }
 
             $rows[] = [
-                'hook' => $this->stringValue($listener, 'hook'),
+                'hook'     => $this->stringValue($listener, 'hook'),
                 'priority' => $this->intValue($listener, 'priority'),
                 'callback' => $this->stringValue($listener, 'callback'),
-                'origin' => $this->stringValue($listener, 'origin', 'unknown'),
-                'file' => $this->stringValue($listener, 'file'),
+                'origin'   => $this->stringValue($listener, 'origin', 'unknown'),
+                'file'     => $this->stringValue($listener, 'file'),
             ];
         }
 

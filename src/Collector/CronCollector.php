@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class CronCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'cron';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Cron';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'event';
     }
@@ -36,18 +36,16 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
         $missed = array_filter($events, static fn (array $event): bool => $event['timestamp'] < time() - 300);
 
         return [
-            'events' => array_slice($events, 0, 150),
-            'event_count' => count($events),
-            'due_count' => count($due),
+            'events'       => array_slice($events, 0, 150),
+            'event_count'  => count($events),
+            'due_count'    => count($due),
             'missed_count' => count($missed),
-            'schedules' => $this->schedules(),
-            'doing_cron' => function_exists('wp_doing_cron') && (bool) wp_doing_cron(),
+            'schedules'    => $this->schedules(),
+            'doing_cron'   => function_exists('wp_doing_cron') && (bool) wp_doing_cron(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         return new ToolbarBlock(
@@ -60,9 +58,7 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -106,16 +102,14 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
 
         return $this->panel(
             'cron',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'event_count')),
         );
     }
 
-    /**
-     * @return list<array{timestamp: int, next_run: string, status: string, hook: string, schedule: string, interval: string, args_count: int}>
-     */
+    /** @return list<array{timestamp: int, next_run: string, status: string, hook: string, schedule: string, interval: string, args_count: int}> */
     private function events(): array
     {
         if (!function_exists('_get_cron_array')) {
@@ -144,12 +138,12 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
                     $interval = is_numeric($instance['interval'] ?? null) ? (int) $instance['interval'] : 0;
 
                     $events[] = [
-                        'timestamp' => $eventTimestamp,
-                        'next_run' => $eventTimestamp > 0 ? date_i18n('Y-m-d H:i:s', $eventTimestamp) : 'n/a',
-                        'status' => $status,
-                        'hook' => (string) $hook,
-                        'schedule' => is_scalar($instance['schedule'] ?? null) ? (string) $instance['schedule'] : 'single',
-                        'interval' => $interval > 0 ? $this->humanInterval($interval) : 'n/a',
+                        'timestamp'  => $eventTimestamp,
+                        'next_run'   => $eventTimestamp > 0 ? date_i18n('Y-m-d H:i:s', $eventTimestamp) : 'n/a',
+                        'status'     => $status,
+                        'hook'       => (string) $hook,
+                        'schedule'   => is_scalar($instance['schedule'] ?? null) ? (string) $instance['schedule'] : 'single',
+                        'interval'   => $interval > 0 ? $this->humanInterval($interval) : 'n/a',
                         'args_count' => count($args),
                     ];
                 }
@@ -161,9 +155,7 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
         return $events;
     }
 
-    /**
-     * @return list<array{name: string, display: string, interval: string}>
-     */
+    /** @return list<array{name: string, display: string, interval: string}> */
     private function schedules(): array
     {
         $schedules = function_exists('wp_get_schedules') ? wp_get_schedules() : [];
@@ -173,8 +165,8 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
         foreach ($schedules as $name => $schedule) {
             $interval = $schedule['interval'];
             $rows[] = [
-                'name' => (string) $name,
-                'display' => $this->stringValue($schedule, 'display'),
+                'name'     => (string) $name,
+                'display'  => $this->stringValue($schedule, 'display'),
                 'interval' => $interval > 0 ? $this->humanInterval($interval) : 'n/a',
             ];
         }
@@ -202,12 +194,12 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
             }
 
             $rows[] = [
-                'timestamp' => $this->intValue($event, 'timestamp'),
-                'next_run' => $this->stringValue($event, 'next_run'),
-                'status' => $this->stringValue($event, 'status'),
-                'hook' => $this->stringValue($event, 'hook'),
-                'schedule' => $this->stringValue($event, 'schedule'),
-                'interval' => $this->stringValue($event, 'interval'),
+                'timestamp'  => $this->intValue($event, 'timestamp'),
+                'next_run'   => $this->stringValue($event, 'next_run'),
+                'status'     => $this->stringValue($event, 'status'),
+                'hook'       => $this->stringValue($event, 'hook'),
+                'schedule'   => $this->stringValue($event, 'schedule'),
+                'interval'   => $this->stringValue($event, 'interval'),
                 'args_count' => $this->intValue($event, 'args_count'),
             ];
         }
@@ -235,8 +227,8 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
             }
 
             $rows[] = [
-                'name' => $this->stringValue($schedule, 'name'),
-                'display' => $this->stringValue($schedule, 'display'),
+                'name'     => $this->stringValue($schedule, 'name'),
+                'display'  => $this->stringValue($schedule, 'display'),
                 'interval' => $this->stringValue($schedule, 'interval'),
             ];
         }

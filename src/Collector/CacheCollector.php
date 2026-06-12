@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class CacheCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'cache';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Cache';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'cache';
     }
@@ -35,39 +35,35 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             : [];
 
         return [
-            'backend_class' => is_object($objectCache) ? $objectCache::class : '',
-            'persistent' => function_exists('wp_using_ext_object_cache') ? wp_using_ext_object_cache() : false,
-            'global_groups' => is_object($objectCache) && is_array($objectCache->global_groups ?? null)
+            'backend_class'         => is_object($objectCache) ? $objectCache::class : '',
+            'persistent'            => function_exists('wp_using_ext_object_cache') ? wp_using_ext_object_cache() : false,
+            'global_groups'         => is_object($objectCache) && is_array($objectCache->global_groups ?? null)
                 ? array_values($objectCache->global_groups)
                 : [],
             'non_persistent_groups' => is_object($objectCache) && is_array($objectCache->non_persistent_groups ?? null)
                 ? array_values($objectCache->non_persistent_groups)
                 : [],
-            'cache_entry_count' => $this->countCacheEntries($cacheStore),
-            'groups' => $this->cacheGroups($cacheStore),
-            'stats' => $this->readStats($objectCache),
-            'nginx_cache' => $this->nginxCacheData(),
+            'cache_entry_count'     => $this->countCacheEntries($cacheStore),
+            'groups'                => $this->cacheGroups($cacheStore),
+            'stats'                 => $this->readStats($objectCache),
+            'nginx_cache'           => $this->nginxCacheData(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
     {
         return null;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $stats = is_array($payload['stats'] ?? null) ? $payload['stats'] : [];
         $hits = $this->intValue($stats, 'cache_hits');
         $misses = $this->intValue($stats, 'cache_misses');
         $reads = $hits + $misses;
-        $hitRatio = $reads > 0 ? round(($hits / $reads) * 100) : 0;
+        $hitRatio = $reads > 0 ? round($hits / $reads * 100) : 0;
         $backend = $this->stringValue($payload, 'backend_class');
         $nginxCache = $this->arrayPayload($payload, 'nginx_cache');
         $groupRows = [];
@@ -118,9 +114,9 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         $html .= Html::section('Groups', Html::table(['Group', 'Entries', 'Approx. size', 'Global', 'Non-persistent'], $groupRows));
         $html .= Html::section('Calls', Html::keyValueTable([
             'Persistent object cache' => Html::dumpValue($this->boolValue($payload, 'persistent')),
-            'Global groups' => Html::dumpValue($payload['global_groups'] ?? []),
-            'Non-persistent groups' => Html::dumpValue($payload['non_persistent_groups'] ?? []),
-            'Backend stats' => Html::dumpValue($stats),
+            'Global groups'           => Html::dumpValue($payload['global_groups'] ?? []),
+            'Non-persistent groups'   => Html::dumpValue($payload['non_persistent_groups'] ?? []),
+            'Backend stats'           => Html::dumpValue($stats),
         ], 'Call', 'Hit'));
         $html .= '</div>';
 
@@ -130,20 +126,20 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             $html .= '</div>';
         }
 
-        return $this->panel('cache', $this->label(), $this->icon(), $html);
+        return $this->panel('cache', $this->getLabel(), $this->getIcon(), $html);
     }
 
-    /**
-     * @param array<array-key, mixed> $cacheStore
-     */
+    /** @param array<array-key, mixed> $cacheStore */
     private function countCacheEntries(array $cacheStore): int
     {
         $count = 0;
 
         foreach ($cacheStore as $group) {
-            if (is_array($group)) {
-                $count += count($group);
+            if (!is_array($group)) {
+                continue;
             }
+
+            $count += count($group);
         }
 
         return $count;
@@ -177,10 +173,10 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
 
             $groupName = (string) $name;
             $groups[] = [
-                'name' => $groupName,
-                'entries' => count($entries),
-                'bytes' => $bytes,
-                'global' => in_array($groupName, $globalGroups, true),
+                'name'           => $groupName,
+                'entries'        => count($entries),
+                'bytes'          => $bytes,
+                'global'         => in_array($groupName, $globalGroups, true),
                 'non_persistent' => in_array($groupName, $nonPersistentGroups, true),
             ];
         }
@@ -190,9 +186,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         return array_slice($groups, 0, 80);
     }
 
-    /**
-     * @return array<string, scalar>
-     */
+    /** @return array<string, scalar> */
     private function readStats(mixed $objectCache): array
     {
         if (!is_object($objectCache)) {
@@ -208,17 +202,17 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
 
             $value = $objectCache->{$property};
 
-            if (is_scalar($value)) {
-                $stats[$property] = $value;
+            if (!is_scalar($value)) {
+                continue;
             }
+
+            $stats[$property] = $value;
         }
 
         return $stats;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function nginxCacheData(): array
     {
         $pluginFile = 'nginx-cache/nginx-cache.php';
@@ -231,11 +225,11 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         $pathStats = $this->nginxCachePathStats($path);
 
         return [
-            'plugin' => $this->nginxCachePluginDetails($pluginFile),
-            'path' => $path,
-            'auto_purge' => function_exists('get_option') && (bool) get_option('nginx_auto_purge'),
+            'plugin'        => $this->nginxCachePluginDetails($pluginFile),
+            'path'          => $path,
+            'auto_purge'    => function_exists('get_option') && (bool) get_option('nginx_auto_purge'),
             'purge_actions' => $this->nginxCachePurgeActions(),
-            'admin_url' => function_exists('admin_url') ? admin_url('tools.php?page=nginx-cache') : '',
+            'admin_url'     => function_exists('admin_url') ? admin_url('tools.php?page=nginx-cache') : '',
             ...$pathStats,
         ];
     }
@@ -272,19 +266,17 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         return function_exists('is_plugin_active_for_network') && is_plugin_active_for_network($pluginFile);
     }
 
-    /**
-     * @return array{name: string, version: string, description: string, author: string}
-     */
+    /** @return array{name: string, version: string, description: string, author: string} */
     private function nginxCachePluginDetails(string $pluginFile): array
     {
         $file = defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR . '/' . $pluginFile : '';
 
         if ($file === '' || !is_file($file)) {
             return [
-                'name' => 'Nginx Cache',
-                'version' => '',
+                'name'        => 'Nginx Cache',
+                'version'     => '',
                 'description' => '',
-                'author' => '',
+                'author'      => '',
             ];
         }
 
@@ -292,24 +284,22 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             $data = get_plugin_data($file, false, false);
 
             return [
-                'name' => $this->stringFromMixed($data['Name']),
-                'version' => $this->stringFromMixed($data['Version']),
+                'name'        => $this->stringFromMixed($data['Name']),
+                'version'     => $this->stringFromMixed($data['Version']),
                 'description' => $this->stringFromMixed($data['Description']),
-                'author' => $this->stringFromMixed($data['Author']),
+                'author'      => $this->stringFromMixed($data['Author']),
             ];
         }
 
         return [
-            'name' => 'Nginx Cache',
-            'version' => '',
+            'name'        => 'Nginx Cache',
+            'version'     => '',
             'description' => '',
-            'author' => '',
+            'author'      => '',
         ];
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function nginxCachePurgeActions(): array
     {
         $default = [
@@ -340,27 +330,27 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         $normalized = [];
 
         foreach ($actions as $action) {
-            if (is_scalar($action) || $action instanceof \Stringable) {
-                $normalized[] = (string) $action;
+            if (!is_scalar($action) && !($action instanceof \Stringable)) {
+                continue;
             }
+
+            $normalized[] = (string) $action;
         }
 
         return $normalized;
     }
 
-    /**
-     * @return array{path_exists: bool, path_readable: bool, path_writable: bool, file_count: int, directory_count: int, size_bytes: int, scan_truncated: bool}
-     */
+    /** @return array{path_exists: bool, path_readable: bool, path_writable: bool, file_count: int, directory_count: int, size_bytes: int, scan_truncated: bool} */
     private function nginxCachePathStats(string $path): array
     {
         $stats = [
-            'path_exists' => $path !== '' && is_dir($path),
-            'path_readable' => $path !== '' && is_readable($path),
-            'path_writable' => $path !== '' && is_writable($path),
-            'file_count' => 0,
+            'path_exists'     => $path !== '' && is_dir($path),
+            'path_readable'   => $path !== '' && is_readable($path),
+            'path_writable'   => $path !== '' && is_writable($path),
+            'file_count'      => 0,
             'directory_count' => 0,
-            'size_bytes' => 0,
-            'scan_truncated' => false,
+            'size_bytes'      => 0,
+            'scan_truncated'  => false,
         ];
 
         if (!$stats['path_exists'] || !$stats['path_readable']) {
@@ -393,10 +383,12 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
                     continue;
                 }
 
-                if ($item->isFile()) {
-                    ++$stats['file_count'];
-                    $stats['size_bytes'] += max(0, $item->getSize());
+                if (!$item->isFile()) {
+                    continue;
                 }
+
+                ++$stats['file_count'];
+                $stats['size_bytes'] += max(0, $item->getSize());
             }
         } catch (\UnexpectedValueException | \RuntimeException) {
             $stats['scan_truncated'] = true;
@@ -405,9 +397,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         return $stats;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     private function renderNginxCache(array $payload): string
     {
         $plugin = is_array($payload['plugin'] ?? null) ? $payload['plugin'] : [];
@@ -423,15 +413,15 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             ['label' => 'Cache size', 'value' => $this->formatBytes($this->intValue($payload, 'size_bytes'))],
         ]);
         $html .= Html::keyValueTable([
-            'Plugin' => $this->stringValue($plugin, 'name', 'Nginx Cache'),
-            'Description' => $this->stringValue($plugin, 'description'),
+            'Plugin'          => $this->stringValue($plugin, 'name', 'Nginx Cache'),
+            'Description'     => $this->stringValue($plugin, 'description'),
             'Cache Zone Path' => $path !== '' ? $path : 'not configured',
-            'Path readable' => Html::dumpValue($this->boolValue($payload, 'path_readable')),
-            'Path writable' => Html::dumpValue($this->boolValue($payload, 'path_writable')),
-            'Directories' => $this->intValue($payload, 'directory_count'),
-            'Scan truncated' => Html::dumpValue($this->boolValue($payload, 'scan_truncated')),
-            'Purge actions' => Html::dumpValue($payload['purge_actions'] ?? []),
-            'Settings' => $this->settingsLink($this->stringValue($payload, 'admin_url')),
+            'Path readable'   => Html::dumpValue($this->boolValue($payload, 'path_readable')),
+            'Path writable'   => Html::dumpValue($this->boolValue($payload, 'path_writable')),
+            'Directories'     => $this->intValue($payload, 'directory_count'),
+            'Scan truncated'  => Html::dumpValue($this->boolValue($payload, 'scan_truncated')),
+            'Purge actions'   => Html::dumpValue($payload['purge_actions'] ?? []),
+            'Settings'        => $this->settingsLink($this->stringValue($payload, 'admin_url')),
         ], 'Setting', 'Value');
 
         return $html;
@@ -461,9 +451,11 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         $normalized = [];
 
         foreach ($value as $itemKey => $itemValue) {
-            if (is_string($itemKey)) {
-                $normalized[$itemKey] = $itemValue;
+            if (!is_string($itemKey)) {
+                continue;
             }
+
+            $normalized[$itemKey] = $itemValue;
         }
 
         return $normalized;
@@ -494,10 +486,10 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             }
 
             $rows[] = [
-                'name' => $this->stringValue($group, 'name'),
-                'entries' => $this->intValue($group, 'entries'),
-                'bytes' => $this->intValue($group, 'bytes'),
-                'global' => $this->boolValue($group, 'global'),
+                'name'           => $this->stringValue($group, 'name'),
+                'entries'        => $this->intValue($group, 'entries'),
+                'bytes'          => $this->intValue($group, 'bytes'),
+                'global'         => $this->boolValue($group, 'global'),
                 'non_persistent' => $this->boolValue($group, 'non_persistent'),
             ];
         }
@@ -516,9 +508,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         return is_scalar($value) || $value === null ? (string) $value : serialize($value);
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function stringList(mixed $value): array
     {
         if (!is_array($value)) {
@@ -528,9 +518,11 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         $strings = [];
 
         foreach ($value as $item) {
-            if (is_scalar($item) || $item instanceof \Stringable) {
-                $strings[] = (string) $item;
+            if (!is_scalar($item) && !($item instanceof \Stringable)) {
+                continue;
             }
+
+            $strings[] = (string) $item;
         }
 
         return $strings;

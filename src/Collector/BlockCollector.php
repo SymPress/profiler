@@ -18,17 +18,17 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'blocks';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Blocks';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'twig-components';
     }
@@ -46,18 +46,16 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
         );
 
         return [
-            'rendered' => $rendered,
-            'parsed' => $parsed,
-            'rendered_count' => count($rendered),
-            'parsed_count' => count($parsed),
+            'rendered'          => $rendered,
+            'parsed'            => $parsed,
+            'rendered_count'    => count($rendered),
+            'parsed_count'      => count($parsed),
             'total_duration_ms' => round($totalDuration, 2),
-            'dynamic_count' => count(array_filter($rendered, static fn (array $block): bool => $block['name'] !== 'core/freeform')),
+            'dynamic_count'     => count(array_filter($rendered, static fn (array $block): bool => $block['name'] !== 'core/freeform')),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         return new ToolbarBlock(
@@ -70,9 +68,7 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -120,16 +116,14 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
 
         return $this->panel(
             'blocks',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'rendered_count')),
         );
     }
 
-    /**
-     * @return list<array{post_id: int, post_title: string, name: string, attrs: array<array-key, mixed>, depth: int}>
-     */
+    /** @return list<array{post_id: int, post_title: string, name: string, attrs: array<array-key, mixed>, depth: int}> */
     private function parsedBlocksFromQuery(): array
     {
         if (!function_exists('parse_blocks')) {
@@ -176,16 +170,18 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
             $attrs = is_array($block['attrs'] ?? null) ? $block['attrs'] : [];
 
             $rows[] = [
-                'post_id' => $postId,
+                'post_id'    => $postId,
                 'post_title' => $postTitle,
-                'name' => $name !== '' ? $name : 'core/freeform',
-                'attrs' => $attrs,
-                'depth' => $depth,
+                'name'       => $name !== '' ? $name : 'core/freeform',
+                'attrs'      => $attrs,
+                'depth'      => $depth,
             ];
 
-            if (is_array($block['innerBlocks'] ?? null)) {
-                $this->appendParsedBlocks($block['innerBlocks'], $postId, $postTitle, $depth + 1, $rows);
+            if (!is_array($block['innerBlocks'] ?? null)) {
+                continue;
             }
+
+            $this->appendParsedBlocks($block['innerBlocks'], $postId, $postTitle, $depth + 1, $rows);
         }
     }
 
@@ -209,11 +205,11 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
             }
 
             $rows[] = [
-                'name' => $this->stringValue($block, 'name', 'core/freeform'),
-                'attrs' => is_array($block['attrs'] ?? null) ? $block['attrs'] : [],
-                'duration_ms' => $this->floatValue($block, 'duration_ms'),
-                'memory_mb' => $this->floatValue($block, 'memory_mb'),
-                'depth' => $this->intValue($block, 'depth'),
+                'name'         => $this->stringValue($block, 'name', 'core/freeform'),
+                'attrs'        => is_array($block['attrs'] ?? null) ? $block['attrs'] : [],
+                'duration_ms'  => $this->floatValue($block, 'duration_ms'),
+                'memory_mb'    => $this->floatValue($block, 'memory_mb'),
+                'depth'        => $this->intValue($block, 'depth'),
                 'output_bytes' => $this->intValue($block, 'output_bytes'),
             ];
         }
@@ -241,11 +237,11 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
             }
 
             $rows[] = [
-                'post_id' => $this->intValue($block, 'post_id'),
+                'post_id'    => $this->intValue($block, 'post_id'),
                 'post_title' => $this->stringValue($block, 'post_title'),
-                'name' => $this->stringValue($block, 'name', 'core/freeform'),
-                'attrs' => is_array($block['attrs'] ?? null) ? $block['attrs'] : [],
-                'depth' => $this->intValue($block, 'depth'),
+                'name'       => $this->stringValue($block, 'name', 'core/freeform'),
+                'attrs'      => is_array($block['attrs'] ?? null) ? $block['attrs'] : [],
+                'depth'      => $this->intValue($block, 'depth'),
             ];
         }
 

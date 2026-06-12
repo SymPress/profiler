@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class AssetCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'assets';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Assets';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'template';
     }
@@ -35,22 +35,20 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         $styles = $this->collectDependencyGroup($GLOBALS['wp_styles'] ?? null);
 
         return [
-            'scripts' => $scripts,
-            'styles' => $styles,
+            'scripts'              => $scripts,
+            'styles'               => $styles,
             'missing_dependencies' => [
                 ...$this->missingDependencies($scripts, 'script'),
                 ...$this->missingDependencies($styles, 'style'),
             ],
-            'duplicate_sources' => [
+            'duplicate_sources'    => [
                 ...$this->duplicateSources($scripts, 'script'),
                 ...$this->duplicateSources($styles, 'style'),
             ],
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $scriptCount = count($this->enqueued($payload, 'scripts'));
@@ -66,9 +64,7 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -112,8 +108,8 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
 
         return $this->panel(
             'assets',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', count($scriptRows) + count($styleRows)),
         );
@@ -150,15 +146,15 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
 
             $extra = $this->readProperty($dependency, 'extra');
             $items[$itemHandle] = [
-                'handle' => $itemHandle,
-                'src' => $this->stringFromMixed($this->readProperty($dependency, 'src')),
-                'deps' => $this->stringList($this->readProperty($dependency, 'deps')),
-                'ver' => $this->stringFromMixed($this->readProperty($dependency, 'ver')),
-                'args' => $this->stringFromMixed($this->readProperty($dependency, 'args')),
-                'extra' => is_array($extra) ? $extra : [],
+                'handle'   => $itemHandle,
+                'src'      => $this->stringFromMixed($this->readProperty($dependency, 'src')),
+                'deps'     => $this->stringList($this->readProperty($dependency, 'deps')),
+                'ver'      => $this->stringFromMixed($this->readProperty($dependency, 'ver')),
+                'args'     => $this->stringFromMixed($this->readProperty($dependency, 'args')),
+                'extra'    => is_array($extra) ? $extra : [],
                 'enqueued' => in_array($itemHandle, $queue, true),
-                'done' => in_array($itemHandle, $done, true),
-                'group' => $this->groupLabel($dependency),
+                'done'     => in_array($itemHandle, $done, true),
+                'group'    => $this->groupLabel($dependency),
             ];
         }
 
@@ -180,9 +176,11 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         $items = [];
 
         foreach ($group['registered'] as $item) {
-            if (is_array($item) && ((bool) ($item['enqueued'] ?? false) || (bool) ($item['done'] ?? false))) {
-                $items[] = $item;
+            if (!is_array($item) || (!(bool) ($item['enqueued'] ?? false) && !(bool) ($item['done'] ?? false))) {
+                continue;
             }
+
+            $items[] = $item;
         }
 
         return $items;
@@ -232,9 +230,11 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
 
                 $dependency = (string) $dependency;
 
-                if ($dependency !== '' && !array_key_exists($dependency, $registered)) {
-                    $issues[] = ['type' => $type, 'handle' => (string) $handle, 'dependency' => $dependency];
+                if ($dependency === '' || array_key_exists($dependency, $registered)) {
+                    continue;
                 }
+
+                $issues[] = ['type' => $type, 'handle' => (string) $handle, 'dependency' => $dependency];
             }
         }
 
@@ -267,9 +267,11 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         $duplicates = [];
 
         foreach ($sources as $source => $handles) {
-            if (count($handles) > 1) {
-                $duplicates[] = ['type' => $type, 'source' => $source, 'handles' => $handles];
+            if (count($handles) <= 1) {
+                continue;
             }
+
+            $duplicates[] = ['type' => $type, 'source' => $source, 'handles' => $handles];
         }
 
         return $duplicates;
@@ -290,9 +292,11 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         $rows = [];
 
         foreach ($issues as $issue) {
-            if (is_array($issue)) {
-                $rows[] = $issue;
+            if (!is_array($issue)) {
+                continue;
             }
+
+            $rows[] = $issue;
         }
 
         return $rows;
@@ -322,9 +326,7 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         return $values[$property] ?? null;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function stringList(mixed $value): array
     {
         if (!is_array($value)) {
@@ -334,9 +336,11 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         $strings = [];
 
         foreach ($value as $item) {
-            if (is_scalar($item) || $item instanceof \Stringable) {
-                $strings[] = (string) $item;
+            if (!is_scalar($item) && !($item instanceof \Stringable)) {
+                continue;
             }
+
+            $strings[] = (string) $item;
         }
 
         return $strings;
