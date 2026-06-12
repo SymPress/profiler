@@ -6,9 +6,7 @@ namespace SymPress\Profiler\Stopwatch;
 
 final class ProfilerStopwatchEvent
 {
-    /**
-     * @var list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>
-     */
+    /** @var list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}> */
     private array $periods = [];
 
     private ?float $periodStartedAt = null;
@@ -19,6 +17,7 @@ final class ProfilerStopwatchEvent
         private readonly string $category,
         private readonly float $startedAt,
     ) {
+
         $this->periodStartedAt = $startedAt;
         $this->maxMemoryMb = $this->memoryMb();
     }
@@ -72,9 +71,7 @@ final class ProfilerStopwatchEvent
         return $this;
     }
 
-    /**
-     * @return list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>
-     */
+    /** @return list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}> */
     public function periods(): array
     {
         $periods = $this->periods;
@@ -82,28 +79,26 @@ final class ProfilerStopwatchEvent
         if ($this->periodStartedAt !== null) {
             $now = microtime(true);
             $periods[] = [
-                'started_at' => $this->periodStartedAt,
-                'stopped_at' => $now,
+                'started_at'  => $this->periodStartedAt,
+                'stopped_at'  => $now,
                 'duration_ms' => round(($now - $this->periodStartedAt) * 1000, 2),
-                'memory_mb' => $this->memoryMb(),
+                'memory_mb'   => $this->memoryMb(),
             ];
         }
 
         return $periods;
     }
 
-    /**
-     * @return array{name: string, category: string, started_at: float, duration_ms: float, memory_mb: float, periods: list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>}
-     */
+    /** @return array{name: string, category: string, started_at: float, duration_ms: float, memory_mb: float, periods: list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>} */
     public function toArray(): array
     {
         return [
-            'name' => $this->name,
-            'category' => $this->category,
-            'started_at' => $this->startedAt,
+            'name'        => $this->name,
+            'category'    => $this->category,
+            'started_at'  => $this->startedAt,
             'duration_ms' => $this->getDuration(),
-            'memory_mb' => $this->getMemory(),
-            'periods' => $this->periods(),
+            'memory_mb'   => $this->getMemory(),
+            'periods'     => $this->periods(),
         ];
     }
 
@@ -116,10 +111,10 @@ final class ProfilerStopwatchEvent
         $memory = $this->memoryMb();
         $this->maxMemoryMb = max($this->maxMemoryMb, $memory);
         $this->periods[] = [
-            'started_at' => $this->periodStartedAt,
-            'stopped_at' => $stoppedAt,
+            'started_at'  => $this->periodStartedAt,
+            'stopped_at'  => $stoppedAt,
             'duration_ms' => max(0.0, round(($stoppedAt - $this->periodStartedAt) * 1000, 2)),
-            'memory_mb' => $memory,
+            'memory_mb'   => $memory,
         ];
     }
 

@@ -8,14 +8,10 @@ final class ProfilerStopwatch
 {
     public const string ROOT = '__root__';
 
-    /**
-     * @var array<string, ProfilerStopwatchEvent>
-     */
+    /** @var array<string, ProfilerStopwatchEvent> */
     private array $events = [];
 
-    /**
-     * @var array<string, list<string>>
-     */
+    /** @var array<string, list<string>> */
     private array $sections = [
         self::ROOT => [],
     ];
@@ -73,26 +69,24 @@ final class ProfilerStopwatch
         $this->currentSection = self::ROOT;
     }
 
-    /**
-     * @return list<ProfilerStopwatchEvent>
-     */
+    /** @return list<ProfilerStopwatchEvent> */
     public function getSectionEvents(string $id = self::ROOT): array
     {
         $names = $this->sections[$id] ?? [];
         $events = [];
 
         foreach ($names as $name) {
-            if (isset($this->events[$name])) {
-                $events[] = $this->events[$name];
+            if (!isset($this->events[$name])) {
+                continue;
             }
+
+            $events[] = $this->events[$name];
         }
 
         return $events;
     }
 
-    /**
-     * @return list<array{name: string, category: string, started_at: float, duration_ms: float, memory_mb: float, periods: list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>}>
-     */
+    /** @return list<array{name: string, category: string, started_at: float, duration_ms: float, memory_mb: float, periods: list<array{started_at: float, stopped_at: float, duration_ms: float, memory_mb: float}>}> */
     public function events(): array
     {
         return array_values(array_map(
