@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class RestAjaxCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'rest_ajax';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'REST / AJAX';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'http-client';
     }
@@ -34,22 +34,20 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         $route = $this->restRoute();
 
         return [
-            'is_rest' => function_exists('wp_is_serving_rest_request')
+            'is_rest'           => function_exists('wp_is_serving_rest_request')
                 ? (bool) wp_is_serving_rest_request()
                 : (defined('REST_REQUEST') && REST_REQUEST),
-            'is_json' => function_exists('wp_is_json_request') && (bool) wp_is_json_request(),
-            'is_ajax' => function_exists('wp_doing_ajax') && (bool) wp_doing_ajax(),
-            'rest_route' => $route,
-            'rest_namespace' => $this->routeNamespace($route),
-            'ajax_action' => $this->requestValue('action'),
-            'method' => $this->serverValue('REQUEST_METHOD', 'GET'),
+            'is_json'           => function_exists('wp_is_json_request') && (bool) wp_is_json_request(),
+            'is_ajax'           => function_exists('wp_doing_ajax') && (bool) wp_doing_ajax(),
+            'rest_route'        => $route,
+            'rest_namespace'    => $this->routeNamespace($route),
+            'ajax_action'       => $this->requestValue('action'),
+            'method'            => $this->serverValue('REQUEST_METHOD', 'GET'),
             'registered_routes' => $this->registeredRestRoutes($route),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $label = $this->boolValue($payload, 'is_rest')
@@ -66,9 +64,7 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -97,12 +93,12 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         ]);
         $html .= '<div id="rest-ajax-request" class="profiler-tab-target">';
         $html .= Html::keyValueTable([
-            'Method' => $this->stringValue($payload, 'method'),
-            'REST route' => Html::dumpValue($this->stringValue($payload, 'rest_route')),
+            'Method'         => $this->stringValue($payload, 'method'),
+            'REST route'     => Html::dumpValue($this->stringValue($payload, 'rest_route')),
             'REST namespace' => Html::dumpValue($this->stringValue($payload, 'rest_namespace')),
-            'AJAX action' => Html::dumpValue($this->stringValue($payload, 'ajax_action')),
-            'REST request' => Html::dumpValue($this->boolValue($payload, 'is_rest')),
-            'AJAX request' => Html::dumpValue($this->boolValue($payload, 'is_ajax')),
+            'AJAX action'    => Html::dumpValue($this->stringValue($payload, 'ajax_action')),
+            'REST request'   => Html::dumpValue($this->boolValue($payload, 'is_rest')),
+            'AJAX request'   => Html::dumpValue($this->boolValue($payload, 'is_ajax')),
         ], 'Name', 'Value');
         $html .= '</div>';
         $html .= '<div id="rest-ajax-routes" class="profiler-tab-target">'
@@ -111,16 +107,14 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
 
         return $this->panel(
             'rest_ajax',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             $this->boolValue($payload, 'is_rest') ? 'REST' : ($this->boolValue($payload, 'is_ajax') ? 'AJAX' : ''),
         );
     }
 
-    /**
-     * @return list<array{route: string, namespace: string, methods: list<string>, matched: bool}>
-     */
+    /** @return list<array{route: string, namespace: string, methods: list<string>, matched: bool}> */
     private function registeredRestRoutes(string $currentRoute): array
     {
         if (!function_exists('rest_get_server')) {
@@ -148,10 +142,10 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
             }
 
             $rows[] = [
-                'route' => $route,
+                'route'     => $route,
                 'namespace' => $this->routeNamespace($route),
-                'methods' => array_values(array_unique($methods)),
-                'matched' => $currentRoute !== '' && $this->routeMatches($route, $currentRoute),
+                'methods'   => array_values(array_unique($methods)),
+                'matched'   => $currentRoute !== '' && $this->routeMatches($route, $currentRoute),
             ];
         }
 
@@ -181,10 +175,10 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
 
             $methods = $route['methods'] ?? [];
             $rows[] = [
-                'route' => $this->stringValue($route, 'route'),
+                'route'     => $this->stringValue($route, 'route'),
                 'namespace' => $this->stringValue($route, 'namespace'),
-                'methods' => $this->stringList($methods),
-                'matched' => $this->boolValue($route, 'matched'),
+                'methods'   => $this->stringList($methods),
+                'matched'   => $this->boolValue($route, 'matched'),
             ];
         }
 
@@ -245,9 +239,7 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         return trim($parts[0], '/');
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function stringList(mixed $value): array
     {
         if (!is_array($value)) {
@@ -257,9 +249,11 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         $strings = [];
 
         foreach ($value as $item) {
-            if (is_scalar($item) || $item instanceof \Stringable) {
-                $strings[] = (string) $item;
+            if (!is_scalar($item) && !($item instanceof \Stringable)) {
+                continue;
             }
+
+            $strings[] = (string) $item;
         }
 
         return $strings;

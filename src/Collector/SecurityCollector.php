@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class SecurityCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'security';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Security';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'user';
     }
@@ -33,20 +33,18 @@ final class SecurityCollector extends AbstractCollector implements DataCollector
         $currentUser = $this->currentUser();
 
         return [
-            'logged_in' => $loggedIn,
-            'user' => $currentUser,
-            'has_auth_cookie' => $this->hasAuthCookie(),
-            'ssl' => function_exists('is_ssl') ? is_ssl() : false,
+            'logged_in'          => $loggedIn,
+            'user'               => $currentUser,
+            'has_auth_cookie'    => $this->hasAuthCookie(),
+            'ssl'                => function_exists('is_ssl') ? is_ssl() : false,
             'can_manage_options' => $loggedIn && function_exists('current_user_can')
                 ? current_user_can('manage_options')
                 : false,
-            'captured_at' => $context->finishedAtIso(),
+            'captured_at'        => $context->finishedAtIso(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $user = is_array($payload['user'] ?? null) ? $payload['user'] : [];
@@ -62,16 +60,14 @@ final class SecurityCollector extends AbstractCollector implements DataCollector
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $overview = Html::definitionTable([
-            'Captured at' => $this->stringValue($payload, 'captured_at'),
-            'Logged in' => $this->boolValue($payload, 'logged_in'),
-            'Has auth cookie' => $this->boolValue($payload, 'has_auth_cookie'),
-            'SSL' => $this->boolValue($payload, 'ssl'),
+            'Captured at'        => $this->stringValue($payload, 'captured_at'),
+            'Logged in'          => $this->boolValue($payload, 'logged_in'),
+            'Has auth cookie'    => $this->boolValue($payload, 'has_auth_cookie'),
+            'SSL'                => $this->boolValue($payload, 'ssl'),
             'Can manage options' => $this->boolValue($payload, 'can_manage_options'),
         ]);
 
@@ -80,17 +76,15 @@ final class SecurityCollector extends AbstractCollector implements DataCollector
 
         return $this->panel(
             'security',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             $this->boolValue($payload, 'logged_in') ? $this->stringValue((array) ($payload['user'] ?? []), 'login', 'user') : 'n/a',
             $this->boolValue($payload, 'logged_in') || $this->boolValue($payload, 'has_auth_cookie'),
         );
     }
 
-    /**
-     * @return array{id: int, login: string, display_name: string, roles: list<string>}|array{}
-     */
+    /** @return array{id: int, login: string, display_name: string, roles: list<string>}|array{} */
     private function currentUser(): array
     {
         if (!function_exists('wp_get_current_user')) {
@@ -104,10 +98,10 @@ final class SecurityCollector extends AbstractCollector implements DataCollector
         }
 
         return [
-            'id' => (int) $user->ID,
-            'login' => is_scalar($user->user_login ?? null) ? (string) $user->user_login : '',
+            'id'           => (int) $user->ID,
+            'login'        => is_scalar($user->user_login ?? null) ? (string) $user->user_login : '',
             'display_name' => is_scalar($user->display_name ?? null) ? (string) $user->display_name : '',
-            'roles' => array_values($user->roles),
+            'roles'        => array_values($user->roles),
         ];
     }
 

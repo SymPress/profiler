@@ -20,17 +20,17 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
     ) {
     }
 
-    public function key(): string
+    public function getKey(): string
     {
         return 'template';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Templates';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'template';
     }
@@ -42,26 +42,24 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         $theme = function_exists('wp_get_theme') ? wp_get_theme() : null;
 
         return [
-            'template' => $template,
-            'template_name' => $template !== '' ? basename($template) : '',
-            'template_dir' => $template !== '' ? dirname($template) : '',
-            'render_ms' => round(max(0.0, ($context->finishedAt() - $renderStartedAt) * 1000), 2),
-            'hierarchy' => $this->templateHierarchy(),
+            'template'       => $template,
+            'template_name'  => $template !== '' ? basename($template) : '',
+            'template_dir'   => $template !== '' ? dirname($template) : '',
+            'render_ms'      => round(max(0.0, ($context->finishedAt() - $renderStartedAt) * 1000), 2),
+            'hierarchy'      => $this->templateHierarchy(),
             'template_parts' => $this->templates->parts(),
-            'theme' => [
-                'name' => is_object($theme) ? (string) $theme->get('Name') : '',
-                'version' => is_object($theme) ? (string) $theme->get('Version') : '',
+            'theme'          => [
+                'name'       => is_object($theme) ? (string) $theme->get('Name') : '',
+                'version'    => is_object($theme) ? (string) $theme->get('Version') : '',
                 'stylesheet' => is_object($theme) ? (string) $theme->get_stylesheet() : '',
-                'template' => is_object($theme) ? (string) $theme->get_template() : '',
+                'template'   => is_object($theme) ? (string) $theme->get_template() : '',
                 'theme_root' => is_object($theme) ? (string) $theme->get_theme_root() : '',
             ],
-            'captured_at' => $context->finishedAtIso(),
+            'captured_at'    => $context->finishedAtIso(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $renderMs = $this->floatValue($payload, 'render_ms');
@@ -76,18 +74,18 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
 
-        $templateRows = [[
+        $templateRows = [
+        [
             $this->stringValue($payload, 'template_name', 'n/a'),
             sprintf('%.1f ms', $this->floatValue($payload, 'render_ms')),
             Html::codeCell($this->stringValue($payload, 'template')),
-        ]];
+        ],
+        ];
         $hierarchyRows = [];
 
         foreach ($this->hierarchyRows($payload) as $candidate) {
@@ -137,8 +135,8 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
 
         return $this->panel(
             'template',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%.0f ms', $this->floatValue($payload, 'render_ms')),
         );
@@ -155,9 +153,7 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         return $this->lifecycle->requestStartedAt();
     }
 
-    /**
-     * @return list<array{template: string, exists: bool, path: string}>
-     */
+    /** @return list<array{template: string, exists: bool, path: string}> */
     private function templateHierarchy(): array
     {
         $candidates = $this->templateCandidates();
@@ -167,17 +163,15 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
             $path = function_exists('locate_template') ? locate_template([$candidate], false, false) : '';
             $rows[] = [
                 'template' => $candidate,
-                'exists' => $path !== '',
-                'path' => $path,
+                'exists'   => $path !== '',
+                'path'     => $path,
             ];
         }
 
         return $rows;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function templateCandidates(): array
     {
         $candidates = [];
@@ -258,8 +252,8 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
 
             $rows[] = [
                 'template' => $this->stringValue($candidate, 'template'),
-                'exists' => $this->boolValue($candidate, 'exists'),
-                'path' => $this->stringValue($candidate, 'path'),
+                'exists'   => $this->boolValue($candidate, 'exists'),
+                'path'     => $this->stringValue($candidate, 'path'),
             ];
         }
 
@@ -289,19 +283,17 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
             $args = $part['args'] ?? [];
 
             $rows[] = [
-                'slug' => $this->stringValue($part, 'slug'),
-                'name' => $this->stringValue($part, 'name'),
+                'slug'      => $this->stringValue($part, 'slug'),
+                'name'      => $this->stringValue($part, 'name'),
                 'templates' => $this->stringList($templates),
-                'args' => is_array($args) ? $args : [],
+                'args'      => is_array($args) ? $args : [],
             ];
         }
 
         return $rows;
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function stringList(mixed $value): array
     {
         if (!is_array($value)) {
@@ -311,9 +303,11 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         $strings = [];
 
         foreach ($value as $item) {
-            if (is_scalar($item) || $item instanceof \Stringable) {
-                $strings[] = (string) $item;
+            if (!is_scalar($item) && !($item instanceof \Stringable)) {
+                continue;
             }
+
+            $strings[] = (string) $item;
         }
 
         return $strings;

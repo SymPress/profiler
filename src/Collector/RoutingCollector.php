@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class RoutingCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'routing';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'Routing';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'routing';
     }
@@ -54,28 +54,24 @@ final class RoutingCollector extends AbstractCollector implements DataCollectorI
         }
 
         return [
-            'request' => is_object($wp) ? $this->mixedToString($wp->request ?? '') : '',
-            'matched_rule' => is_object($wp) ? $this->mixedToString($wp->matched_rule ?? '') : '',
-            'matched_query' => is_object($wp) ? $this->mixedToString($wp->matched_query ?? '') : '',
-            'query_vars' => is_object($wp) && is_array($wp->query_vars ?? null) ? $wp->query_vars : [],
-            'template' => $context->template(),
+            'request'        => is_object($wp) ? $this->mixedToString($wp->request ?? '') : '',
+            'matched_rule'   => is_object($wp) ? $this->mixedToString($wp->matched_rule ?? '') : '',
+            'matched_query'  => is_object($wp) ? $this->mixedToString($wp->matched_query ?? '') : '',
+            'query_vars'     => is_object($wp) && is_array($wp->query_vars ?? null) ? $wp->query_vars : [],
+            'template'       => $context->template(),
             'queried_object' => $this->queriedObjectSummary(),
-            'conditionals' => $conditionals,
-            'rewrite' => $this->rewriteSummary(),
+            'conditionals'   => $conditionals,
+            'rewrite'        => $this->rewriteSummary(),
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
     {
         return null;
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         $requestPath = $this->stringValue($payload, 'request');
@@ -110,12 +106,10 @@ final class RoutingCollector extends AbstractCollector implements DataCollectorI
         $html .= Html::section('Conditionals', Html::codeBlock($payload['conditionals'] ?? []));
         $html .= Html::section('Rewrite', Html::codeBlock($payload['rewrite'] ?? []));
 
-        return $this->panel('routing', $this->label(), $this->icon(), $html);
+        return $this->panel('routing', $this->getLabel(), $this->getIcon(), $html);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function queriedObjectSummary(): array
     {
         if (!function_exists('get_queried_object')) {
@@ -130,15 +124,13 @@ final class RoutingCollector extends AbstractCollector implements DataCollectorI
 
         return array_filter([
             'class' => $object::class,
-            'id' => $object->ID ?? $object->term_id ?? $object->user_id ?? null,
-            'name' => $object->post_name ?? $object->slug ?? $object->user_login ?? '',
+            'id'    => $object->ID ?? $object->term_id ?? $object->user_id ?? null,
+            'name'  => $object->post_name ?? $object->slug ?? $object->user_login ?? '',
             'title' => $object->post_title ?? $object->name ?? '',
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function rewriteSummary(): array
     {
         $rewrite = $GLOBALS['wp_rewrite'] ?? null;
@@ -148,10 +140,10 @@ final class RoutingCollector extends AbstractCollector implements DataCollectorI
         }
 
         return [
-            'permalink_structure' => $rewrite->permalink_structure ?? '',
-            'root' => $rewrite->root ?? '',
+            'permalink_structure'  => $rewrite->permalink_structure ?? '',
+            'root'                 => $rewrite->root ?? '',
             'use_trailing_slashes' => $rewrite->use_trailing_slashes ?? false,
-            'front' => $rewrite->front ?? '',
+            'front'                => $rewrite->front ?? '',
         ];
     }
 

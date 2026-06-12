@@ -12,17 +12,17 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class WordPressQueryCollector extends AbstractCollector implements DataCollectorInterface
 {
-    public function key(): string
+    public function getKey(): string
     {
         return 'wp_query';
     }
 
-    public function label(): string
+    public function getLabel(): string
     {
         return 'WordPress Query';
     }
 
-    public function icon(): string
+    public function getIcon(): string
     {
         return 'routing';
     }
@@ -35,29 +35,27 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
         $wp = $GLOBALS['wp'] ?? null;
 
         return [
-            'request' => is_object($wp) ? $this->stringFromMixed($wp->request ?? '') : '',
-            'matched_rule' => is_object($wp) ? $this->stringFromMixed($wp->matched_rule ?? '') : '',
-            'matched_query' => is_object($wp) ? $this->stringFromMixed($wp->matched_query ?? '') : '',
-            'query_vars' => is_object($query) && is_array($query->query_vars ?? null) ? $query->query_vars : [],
-            'request_sql' => is_object($query) ? $this->stringFromMixed($query->request ?? '') : '',
-            'post_count' => is_object($query) && is_numeric($query->post_count ?? null) ? (int) $query->post_count : 0,
-            'found_posts' => is_object($query) && is_numeric($query->found_posts ?? null) ? (int) $query->found_posts : 0,
-            'max_num_pages' => is_object($query) && is_numeric($query->max_num_pages ?? null) ? (int) $query->max_num_pages : 0,
-            'is_main_query' => is_object($query) && method_exists($query, 'is_main_query') ? (bool) $query->is_main_query() : false,
+            'request'        => is_object($wp) ? $this->stringFromMixed($wp->request ?? '') : '',
+            'matched_rule'   => is_object($wp) ? $this->stringFromMixed($wp->matched_rule ?? '') : '',
+            'matched_query'  => is_object($wp) ? $this->stringFromMixed($wp->matched_query ?? '') : '',
+            'query_vars'     => is_object($query) && is_array($query->query_vars ?? null) ? $query->query_vars : [],
+            'request_sql'    => is_object($query) ? $this->stringFromMixed($query->request ?? '') : '',
+            'post_count'     => is_object($query) && is_numeric($query->post_count ?? null) ? (int) $query->post_count : 0,
+            'found_posts'    => is_object($query) && is_numeric($query->found_posts ?? null) ? (int) $query->found_posts : 0,
+            'max_num_pages'  => is_object($query) && is_numeric($query->max_num_pages ?? null) ? (int) $query->max_num_pages : 0,
+            'is_main_query'  => is_object($query) && method_exists($query, 'is_main_query') ? (bool) $query->is_main_query() : false,
             'queried_object' => $this->queriedObjectSummary(),
-            'conditionals' => $this->conditionals(),
-            'posts' => $this->posts($query),
-            'pagination' => [
-                'paged' => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('paged') : 0),
-                'page' => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('page') : 0),
+            'conditionals'   => $this->conditionals(),
+            'posts'          => $this->posts($query),
+            'pagination'     => [
+                'paged'          => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('paged') : 0),
+                'page'           => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('page') : 0),
                 'posts_per_page' => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('posts_per_page') : 0),
             ],
         ];
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $foundPosts = $this->intValue($payload, 'found_posts');
@@ -73,9 +71,7 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
     {
         unset($profile);
@@ -115,11 +111,11 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
         ]);
         $html .= '<div id="wp-query-overview" class="profiler-tab-target">';
         $html .= Html::keyValueTable([
-            'Request' => Html::dumpValue($this->stringValue($payload, 'request', '/')),
-            'Matched rule' => Html::dumpValue($this->stringValue($payload, 'matched_rule')),
-            'Matched query' => Html::dumpValue($this->stringValue($payload, 'matched_query')),
+            'Request'        => Html::dumpValue($this->stringValue($payload, 'request', '/')),
+            'Matched rule'   => Html::dumpValue($this->stringValue($payload, 'matched_rule')),
+            'Matched query'  => Html::dumpValue($this->stringValue($payload, 'matched_query')),
             'Queried object' => Html::dumpValue($payload['queried_object'] ?? []),
-            'Pagination' => Html::dumpValue($payload['pagination'] ?? []),
+            'Pagination'     => Html::dumpValue($payload['pagination'] ?? []),
         ], 'Name', 'Value');
         $html .= '</div>';
         $html .= '<div id="wp-query-vars" class="profiler-tab-target">'
@@ -139,16 +135,14 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
 
         return $this->panel(
             'wp_query',
-            $this->label(),
-            $this->icon(),
+            $this->getLabel(),
+            $this->getIcon(),
             $html,
             sprintf('%d', $this->intValue($payload, 'post_count')),
         );
     }
 
-    /**
-     * @return array<string, bool>
-     */
+    /** @return array<string, bool> */
     private function conditionals(): array
     {
         $conditionals = [];
@@ -178,9 +172,7 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
         return $conditionals;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     private function queriedObjectSummary(): array
     {
         if (!function_exists('get_queried_object')) {
@@ -194,18 +186,16 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
         }
 
         return array_filter([
-            'class' => $object::class,
-            'id' => $object->ID ?? $object->term_id ?? $object->user_id ?? null,
-            'name' => $object->post_name ?? $object->slug ?? $object->user_login ?? '',
-            'title' => $object->post_title ?? $object->name ?? '',
-            'taxonomy' => $object->taxonomy ?? '',
+            'class'     => $object::class,
+            'id'        => $object->ID ?? $object->term_id ?? $object->user_id ?? null,
+            'name'      => $object->post_name ?? $object->slug ?? $object->user_login ?? '',
+            'title'     => $object->post_title ?? $object->name ?? '',
+            'taxonomy'  => $object->taxonomy ?? '',
             'post_type' => $object->post_type ?? '',
         ], static fn (mixed $value): bool => $value !== null && $value !== '');
     }
 
-    /**
-     * @return list<array{id: int, type: string, status: string, title: string, name: string}>
-     */
+    /** @return list<array{id: int, type: string, status: string, title: string, name: string}> */
     private function posts(mixed $query): array
     {
         if (!is_object($query) || !is_array($query->posts ?? null)) {
@@ -220,11 +210,11 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
             }
 
             $posts[] = [
-                'id' => is_numeric($post->ID ?? null) ? (int) $post->ID : 0,
-                'type' => $this->stringFromMixed($post->post_type ?? ''),
+                'id'     => is_numeric($post->ID ?? null) ? (int) $post->ID : 0,
+                'type'   => $this->stringFromMixed($post->post_type ?? ''),
                 'status' => $this->stringFromMixed($post->post_status ?? ''),
-                'title' => $this->stringFromMixed($post->post_title ?? ''),
-                'name' => $this->stringFromMixed($post->post_name ?? ''),
+                'title'  => $this->stringFromMixed($post->post_title ?? ''),
+                'name'   => $this->stringFromMixed($post->post_name ?? ''),
             ];
         }
 
@@ -251,11 +241,11 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
             }
 
             $rows[] = [
-                'id' => $this->intValue($post, 'id'),
-                'type' => $this->stringValue($post, 'type'),
+                'id'     => $this->intValue($post, 'id'),
+                'type'   => $this->stringValue($post, 'type'),
                 'status' => $this->stringValue($post, 'status'),
-                'title' => $this->stringValue($post, 'title'),
-                'name' => $this->stringValue($post, 'name'),
+                'title'  => $this->stringValue($post, 'title'),
+                'name'   => $this->stringValue($post, 'name'),
             ];
         }
 
