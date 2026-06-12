@@ -30,42 +30,42 @@ final class ProfilerPageRenderer
         $bodyHtml = $this->views->render(
             'profiler/layout',
             [
-                'header_html' => $this->views->render('profiler/header', [
-                    'home_url' => $this->urls->home(),
-                    'search_url' => $this->urls->search(),
-                    'search_query' => '',
+                'header_html'   => $this->views->render('profiler/header', [
+                    'home_url'      => $this->urls->home(),
+                    'search_url'    => $this->urls->search(),
+                    'search_query'  => '',
                     'profiler_icon' => $this->assets->icon('symfony'),
                 ]),
-                'summary_html' => $this->views->render('profiler/summary', [
-                    'profile' => $profile,
-                    'status_class' => $this->statusClass($this->statusCode($profile)),
-                    'status_code' => $this->statusCode($profile),
-                    'status_text' => $this->statusText($this->statusCode($profile)),
-                    'alert_icon' => $this->assets->icon('alert-circle'),
+                'summary_html'  => $this->views->render('profiler/summary', [
+                    'profile'       => $profile,
+                    'status_class'  => $this->statusClass($this->statusCode($profile)),
+                    'status_code'   => $this->statusCode($profile),
+                    'status_text'   => $this->statusText($this->statusCode($profile)),
+                    'alert_icon'    => $this->assets->icon('alert-circle'),
                     'redirect_icon' => $this->assets->icon('redirect'),
                     'referrer_icon' => $this->assets->icon('referrer'),
                 ]),
-                'menu_items' => $menuItems,
+                'menu_items'    => $menuItems,
                 'settings_html' => $this->views->render('profiler/settings', [
-                    'settings_icon' => $this->assets->icon('settings'),
+                    'settings_icon'              => $this->assets->icon('settings'),
                     'settings_theme_system_icon' => $this->assets->icon('settings-theme-system'),
-                    'settings_theme_light_icon' => $this->assets->icon('settings-theme-light'),
-                    'settings_theme_dark_icon' => $this->assets->icon('settings-theme-dark'),
-                    'settings_width_fixed_icon' => $this->assets->icon('settings-width-fixed'),
+                    'settings_theme_light_icon'  => $this->assets->icon('settings-theme-light'),
+                    'settings_theme_dark_icon'   => $this->assets->icon('settings-theme-dark'),
+                    'settings_width_fixed_icon'  => $this->assets->icon('settings-width-fixed'),
                     'settings_width_fitted_icon' => $this->assets->icon('settings-width-fitted'),
                 ]),
-                'content_html' => $selected->html,
-                'base_js' => $this->assets->baseJs(),
-                'shortcuts' => [
+                'content_html'  => $selected->html,
+                'base_js'       => $this->assets->baseJs(),
+                'shortcuts'     => [
                     [
                         'label' => 'Search profiles',
-                        'url' => $this->urls->search(),
-                        'icon' => $this->assets->icon('search'),
+                        'url'   => $this->urls->search(),
+                        'icon'  => $this->assets->icon('search'),
                     ],
                     [
                         'label' => 'Latest',
-                        'url' => $this->urls->latest(),
-                        'icon' => '',
+                        'url'   => $this->urls->latest(),
+                        'icon'  => '',
                     ],
                 ],
             ],
@@ -74,20 +74,18 @@ final class ProfilerPageRenderer
         return $this->renderBase('Profiler', $bodyHtml);
     }
 
-    /**
-     * @param list<ProfileRecord> $profiles
-     */
+    /** @param list<ProfileRecord> $profiles */
     public function renderResults(array $profiles, ProfileSearchCriteria $criteria, ?string $missingToken = null): string
     {
         $resultsHtml = $this->resultsHtml($profiles, $criteria, $missingToken);
         $bodyHtml = $this->views->render('profiler/layout', [
-            'header_html' => $this->headerHtml($criteria->text),
-            'summary_html' => '<div class="status"><h2>Profile Search</h2><p>Search and inspect recorded requests.</p></div>',
-            'menu_items' => [],
+            'header_html'   => $this->headerHtml($criteria->text),
+            'summary_html'  => '<div class="status"><h2>Profile Search</h2><p>Search and inspect recorded requests.</p></div>',
+            'menu_items'    => [],
             'settings_html' => $this->settingsHtml(),
-            'content_html' => $resultsHtml,
-            'base_js' => $this->assets->baseJs(),
-            'shortcuts' => $this->shortcuts(),
+            'content_html'  => $resultsHtml,
+            'base_js'       => $this->assets->baseJs(),
+            'shortcuts'     => $this->shortcuts(),
         ]);
 
         return $this->renderBase('Profiler', $bodyHtml);
@@ -129,13 +127,13 @@ final class ProfilerPageRenderer
                 : '';
 
             $items[] = [
-                'id' => $id,
-                'label' => $label,
-                'link' => $panel instanceof CollectorPanel ? $this->urls->profile($profile->token, $panel->id) : '#',
-                'metric' => $metric,
-                'icon' => $this->assets->icon($icon),
+                'id'       => $id,
+                'label'    => $label,
+                'link'     => $panel instanceof CollectorPanel ? $this->urls->profile($profile->token, $panel->id) : '#',
+                'metric'   => $metric,
+                'icon'     => $this->assets->icon($icon),
                 'selected' => $id === $selectedPanel,
-                'enabled' => $enabled,
+                'enabled'  => $enabled,
             ];
 
             unset($panelsById[$id]);
@@ -143,50 +141,48 @@ final class ProfilerPageRenderer
 
         foreach ($panelsById as $panel) {
             $items[] = [
-                'id' => $panel->id,
-                'label' => $this->nativePanelLabel($panel->id, $panel->title),
-                'link' => $this->urls->profile($profile->token, $panel->id),
-                'metric' => $panel->metric !== '' ? $panel->metric : ($blockMetrics[$panel->id] ?? ''),
-                'icon' => $this->assets->icon($panel->icon),
+                'id'       => $panel->id,
+                'label'    => $this->nativePanelLabel($panel->id, $panel->title),
+                'link'     => $this->urls->profile($profile->token, $panel->id),
+                'metric'   => $panel->metric !== '' ? $panel->metric : ($blockMetrics[$panel->id] ?? ''),
+                'icon'     => $this->assets->icon($panel->icon),
                 'selected' => $panel->id === $selectedPanel,
-                'enabled' => $panel->enabled,
+                'enabled'  => $panel->enabled,
             ];
         }
 
         return $items;
     }
 
-    /**
-     * @return array<string, array{label: string, icon: string, placeholder?: bool}>
-     */
+    /** @return array<string, array{label: string, icon: string, placeholder?: bool}> */
     private function nativeMenuOrder(): array
     {
         return [
-            'request' => ['label' => 'Request / Response', 'icon' => 'request'],
-            'performance' => ['label' => 'Performance', 'icon' => 'performance'],
-            'logs' => ['label' => 'Logs', 'icon' => 'logger'],
-            'hooks' => ['label' => 'Events', 'icon' => 'event'],
-            'routing' => ['label' => 'Routing', 'icon' => 'routing'],
-            'wp_query' => ['label' => 'WordPress Query', 'icon' => 'routing'],
-            'rest_ajax' => ['label' => 'REST / AJAX', 'icon' => 'http-client'],
-            'cache' => ['label' => 'Cache', 'icon' => 'cache'],
-            'options' => ['label' => 'Options', 'icon' => 'config'],
-            'localization' => ['label' => 'Translation', 'icon' => 'translation'],
-            'template' => ['label' => 'Templates', 'icon' => 'template'],
-            'blocks' => ['label' => 'Blocks', 'icon' => 'twig-components'],
-            'assets' => ['label' => 'Assets', 'icon' => 'template'],
-            'database' => ['label' => 'Doctrine', 'icon' => 'database'],
-            'plugins' => ['label' => 'Plugins / Theme', 'icon' => 'wordpress'],
-            'cron' => ['label' => 'Cron', 'icon' => 'event'],
-            'kernel' => ['label' => 'Configuration', 'icon' => 'config'],
-            'validator' => ['label' => 'Validator', 'icon' => 'validator', 'placeholder' => true],
-            'forms' => ['label' => 'Forms', 'icon' => 'forms', 'placeholder' => true],
-            'exceptions' => ['label' => 'Exception', 'icon' => 'alert-circle'],
-            'security' => ['label' => 'Security', 'icon' => 'user'],
+            'request'         => ['label' => 'Request / Response', 'icon' => 'request'],
+            'performance'     => ['label' => 'Performance', 'icon' => 'performance'],
+            'logs'            => ['label' => 'Logs', 'icon' => 'logger'],
+            'hooks'           => ['label' => 'Events', 'icon' => 'event'],
+            'routing'         => ['label' => 'Routing', 'icon' => 'routing'],
+            'wp_query'        => ['label' => 'WordPress Query', 'icon' => 'routing'],
+            'rest_ajax'       => ['label' => 'REST / AJAX', 'icon' => 'http-client'],
+            'cache'           => ['label' => 'Cache', 'icon' => 'cache'],
+            'options'         => ['label' => 'Options', 'icon' => 'config'],
+            'localization'    => ['label' => 'Translation', 'icon' => 'translation'],
+            'template'        => ['label' => 'Templates', 'icon' => 'template'],
+            'blocks'          => ['label' => 'Blocks', 'icon' => 'twig-components'],
+            'assets'          => ['label' => 'Assets', 'icon' => 'template'],
+            'database'        => ['label' => 'Doctrine', 'icon' => 'database'],
+            'plugins'         => ['label' => 'Plugins / Theme', 'icon' => 'wordpress'],
+            'cron'            => ['label' => 'Cron', 'icon' => 'event'],
+            'kernel'          => ['label' => 'Configuration', 'icon' => 'config'],
+            'validator'       => ['label' => 'Validator', 'icon' => 'validator', 'placeholder' => true],
+            'forms'           => ['label' => 'Forms', 'icon' => 'forms', 'placeholder' => true],
+            'exceptions'      => ['label' => 'Exception', 'icon' => 'alert-circle'],
+            'security'        => ['label' => 'Security', 'icon' => 'user'],
             'twig_components' => ['label' => 'Template Components', 'icon' => 'twig-components', 'placeholder' => true],
-            'http_client' => ['label' => 'HTTP Client', 'icon' => 'http-client'],
-            'debug' => ['label' => 'Debug', 'icon' => 'debug', 'placeholder' => true],
-            'emails' => ['label' => 'Emails', 'icon' => 'emails', 'placeholder' => true],
+            'http_client'     => ['label' => 'HTTP Client', 'icon' => 'http-client'],
+            'debug'           => ['label' => 'Debug', 'icon' => 'debug', 'placeholder' => true],
+            'emails'          => ['label' => 'Emails', 'icon' => 'emails', 'placeholder' => true],
         ];
     }
 
@@ -195,9 +191,7 @@ final class ProfilerPageRenderer
         return $this->nativeMenuOrder()[$id]['label'] ?? $fallback;
     }
 
-    /**
-     * @param list<CollectorPanel> $panels
-     */
+    /** @param list<CollectorPanel> $panels */
     private function resolveSelectedPanel(array $panels, string $selectedPanel): CollectorPanel
     {
         foreach ($panels as $panel) {
@@ -219,9 +213,9 @@ final class ProfilerPageRenderer
         return $this->views->render(
             'profiler/base',
             [
-                'title' => $title,
+                'title'        => $title,
                 'profiler_css' => $this->assets->profilerCss($this->urls->font('JetBrainsMono.woff2')),
-                'body_html' => $bodyHtml,
+                'body_html'    => $bodyHtml,
             ],
         );
     }
@@ -229,9 +223,9 @@ final class ProfilerPageRenderer
     private function headerHtml(string $searchQuery = ''): string
     {
         return $this->views->render('profiler/header', [
-            'home_url' => $this->urls->home(),
-            'search_url' => $this->urls->search(),
-            'search_query' => $searchQuery,
+            'home_url'      => $this->urls->home(),
+            'search_url'    => $this->urls->search(),
+            'search_query'  => $searchQuery,
             'profiler_icon' => $this->assets->icon('symfony'),
         ]);
     }
@@ -239,55 +233,49 @@ final class ProfilerPageRenderer
     private function settingsHtml(): string
     {
         return $this->views->render('profiler/settings', [
-            'settings_icon' => $this->assets->icon('settings'),
+            'settings_icon'              => $this->assets->icon('settings'),
             'settings_theme_system_icon' => $this->assets->icon('settings-theme-system'),
-            'settings_theme_light_icon' => $this->assets->icon('settings-theme-light'),
-            'settings_theme_dark_icon' => $this->assets->icon('settings-theme-dark'),
-            'settings_width_fixed_icon' => $this->assets->icon('settings-width-fixed'),
+            'settings_theme_light_icon'  => $this->assets->icon('settings-theme-light'),
+            'settings_theme_dark_icon'   => $this->assets->icon('settings-theme-dark'),
+            'settings_width_fixed_icon'  => $this->assets->icon('settings-width-fixed'),
             'settings_width_fitted_icon' => $this->assets->icon('settings-width-fitted'),
         ]);
     }
 
-    /**
-     * @param list<ProfileRecord> $profiles
-     */
+    /** @param list<ProfileRecord> $profiles */
     private function resultsHtml(array $profiles, ProfileSearchCriteria $criteria, ?string $missingToken): string
     {
         return $this->views->render('profiler/results_panel', [
-            'profiles' => $profiles,
-            'criteria' => $criteria,
-            'missing_token' => $missingToken,
-            'search_icon' => $this->assets->icon('search'),
-            'search_url' => $this->urls->search(),
-            'latest_url' => $this->urls->latest(),
-            'last_url' => $this->urls->last(),
+            'profiles'        => $profiles,
+            'criteria'        => $criteria,
+            'missing_token'   => $missingToken,
+            'search_icon'     => $this->assets->icon('search'),
+            'search_url'      => $this->urls->search(),
+            'latest_url'      => $this->urls->latest(),
+            'last_url'        => $this->urls->last(),
             'context_options' => $this->contextOptions(),
         ]);
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function contextOptions(): array
     {
         return ['ajax', 'backoffice', 'core', 'frontoffice', 'login', 'rest'];
     }
 
-    /**
-     * @return list<array{label: string, url: string, icon: string}>
-     */
+    /** @return list<array{label: string, url: string, icon: string}> */
     private function shortcuts(): array
     {
         return [
             [
                 'label' => 'Search profiles',
-                'url' => $this->urls->search(),
-                'icon' => $this->assets->icon('search'),
+                'url'   => $this->urls->search(),
+                'icon'  => $this->assets->icon('search'),
             ],
             [
                 'label' => 'Latest',
-                'url' => $this->urls->latest(),
-                'icon' => '',
+                'url'   => $this->urls->latest(),
+                'icon'  => '',
             ],
         ];
     }

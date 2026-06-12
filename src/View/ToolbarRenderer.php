@@ -16,9 +16,7 @@ final class ToolbarRenderer
     ) {
     }
 
-    /**
-     * @param list<ToolbarBlock> $blocks
-     */
+    /** @param list<ToolbarBlock> $blocks */
     public function renderBootstrap(ProfileRecord $profile, array $blocks): string
     {
         if ($blocks === []) {
@@ -37,9 +35,7 @@ final class ToolbarRenderer
         );
     }
 
-    /**
-     * @param list<ToolbarBlock> $blocks
-     */
+    /** @param list<ToolbarBlock> $blocks */
     public function renderContent(ProfileRecord $profile, array $blocks): string
     {
         if ($blocks === []) {
@@ -62,9 +58,7 @@ final class ToolbarRenderer
         );
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function symfonyEightItems(ProfileRecord $profile): array
     {
         $request = $profile->collector('request');
@@ -165,9 +159,7 @@ final class ToolbarRenderer
         );
     }
 
-    /**
-     * @param array<string, mixed> $payload
-     */
+    /** @param array<string, mixed> $payload */
     private function timeItem(ProfileRecord $profile, array $payload): string
     {
         return $this->metricItem(
@@ -362,9 +354,7 @@ final class ToolbarRenderer
         );
     }
 
-    /**
-     * @param list<array{0: string, 1: string}> $detailPieces
-     */
+    /** @param list<array{0: string, 1: string}> $detailPieces */
     private function metricItem(
         string $name,
         string $token,
@@ -450,9 +440,7 @@ final class ToolbarRenderer
         );
     }
 
-    /**
-     * @param list<string> $itemsHtml
-     */
+    /** @param list<string> $itemsHtml */
     private function renderContentWrapper(
         string $token,
         array $itemsHtml,
@@ -469,9 +457,7 @@ final class ToolbarRenderer
         );
     }
 
-    /**
-     * @param list<array{0: string, 1: string}> $pieces
-     */
+    /** @param list<array{0: string, 1: string}> $pieces */
     private function infoPieces(array $pieces, ?string $link = null): string
     {
         $html = '';
@@ -600,9 +586,7 @@ final class ToolbarRenderer
         return sprintf('%s MiB', number_format($memory, 1, '.', ''));
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     private function stringValue(array $payload, string $key, string $default = ''): string
     {
         $value = $payload[$key] ?? $default;
@@ -614,9 +598,7 @@ final class ToolbarRenderer
         return $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     private function intValue(array $payload, string $key, int $default = 0): int
     {
         $value = $payload[$key] ?? $default;
@@ -624,9 +606,7 @@ final class ToolbarRenderer
         return is_numeric($value) ? (int) $value : $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     private function floatValue(array $payload, string $key, float $default = 0.0): float
     {
         $value = $payload[$key] ?? $default;
@@ -634,9 +614,7 @@ final class ToolbarRenderer
         return is_numeric($value) ? (float) $value : $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     private function boolValue(array $payload, string $key, bool $default = false): bool
     {
         $value = $payload[$key] ?? $default;
@@ -644,9 +622,7 @@ final class ToolbarRenderer
         return is_bool($value) ? $value : $default;
     }
 
-    /**
-     * @param array<array-key, mixed> $payload
-     */
+    /** @param array<array-key, mixed> $payload */
     private function stringListValue(array $payload, string $key): string
     {
         $values = $payload[$key] ?? [];

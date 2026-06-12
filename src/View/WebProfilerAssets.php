@@ -6,9 +6,7 @@ namespace SymPress\Profiler\View;
 
 final class WebProfilerAssets
 {
-    /**
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     private array $cache = [];
 
     public function icon(string $name): string
@@ -85,17 +83,17 @@ final class WebProfilerAssets
         $stylesheetPlaceholder = '<link rel="stylesheet"{% if csp_style_nonce %} nonce="{{ csp_style_nonce }}"{% endif %} href="{{ url(\'_wdt_stylesheet\') }}" />';
 
         $replacements = [
-            '<div id="sfwdt{{ token }}">' => '<div id="sfwdt' . htmlspecialchars($token, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">',
-            $stylesheetPlaceholder => $stylesheetLink,
+            '<div id="sfwdt{{ token }}">'                                                                                              => '<div id="sfwdt' . htmlspecialchars($token, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">',
+            $stylesheetPlaceholder                                                                                                     => $stylesheetLink,
             '<script{% if csp_script_nonce is defined and csp_script_nonce %} nonce="{{ csp_script_nonce }}"{% endif %}>/*<![CDATA[*/' => '<script>/*<![CDATA[*/',
-            '{{ excluded_ajax_paths|json_encode|raw }}' => json_encode($excludedAjaxPaths, JSON_THROW_ON_ERROR),
-            "{{ request.basePath|e('js') }}" => $this->escapeJs($basePath),
-            '{{ request.basePath|length }}' => (string) strlen($basePath),
-            "{{ (request.schemeAndHttpHost ~ request.basePath)|e('js') }}" => $this->escapeJs($absoluteBasePath),
-            '{{ (request.schemeAndHttpHost ~ request.basePath)|length }}' => (string) strlen($absoluteBasePath),
-            "{{ url('_wdt', {token: 'xxxxxx'})|escape('js') }}" => $this->escapeJs($wdtUrlPlaceholder),
-            "{{ url('_profiler_home')|escape('js') }}" => $this->escapeJs($profilerHomeUrl),
-            '{{ token }}' => $token,
+            '{{ excluded_ajax_paths|json_encode|raw }}'                                                                                => json_encode($excludedAjaxPaths, JSON_THROW_ON_ERROR),
+            "{{ request.basePath|e('js') }}"                                                                                           => $this->escapeJs($basePath),
+            '{{ request.basePath|length }}'                                                                                            => (string) strlen($basePath),
+            "{{ (request.schemeAndHttpHost ~ request.basePath)|e('js') }}"                                                             => $this->escapeJs($absoluteBasePath),
+            '{{ (request.schemeAndHttpHost ~ request.basePath)|length }}'                                                              => (string) strlen($absoluteBasePath),
+            "{{ url('_wdt', {token: 'xxxxxx'})|escape('js') }}"                                                                        => $this->escapeJs($wdtUrlPlaceholder),
+            "{{ url('_profiler_home')|escape('js') }}"                                                                                 => $this->escapeJs($profilerHomeUrl),
+            '{{ token }}'                                                                                                              => $token,
         ];
 
         $template = str_replace(array_keys($replacements), array_values($replacements), $template);
@@ -126,9 +124,7 @@ final class WebProfilerAssets
         return null;
     }
 
-    /**
-     * @param callable(): string $factory
-     */
+    /** @param callable(): string $factory */
     private function cached(string $key, callable $factory): string
     {
         if (array_key_exists($key, $this->cache)) {
@@ -169,9 +165,7 @@ final class WebProfilerAssets
         return dirname(__DIR__, 2) . '/resources/symfony/web-profiler-bundle/' . ltrim($relativePath, '/');
     }
 
-    /**
-     * @return list<string>
-     */
+    /** @return list<string> */
     private function resourceCandidates(string $relativePath): array
     {
         $normalized = ltrim($relativePath, '/');

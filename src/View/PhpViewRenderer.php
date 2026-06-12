@@ -11,9 +11,7 @@ final class PhpViewRenderer
     ) {
     }
 
-    /**
-     * @param array<string, mixed> $context
-     */
+    /** @param array<string, mixed> $context */
     public function render(string $view, array $context = []): string
     {
         $path = $this->resolve($view);
