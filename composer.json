@@ -13,13 +13,13 @@
     "require": {
         "php": "^8.5",
         "ext-json": "*",
-        "sympress/kernel": "@dev"
+        "sympress/kernel": "dev-main"
     },
     "require-dev": {
         "brain/monkey": "^2.6",
         "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
         "friendsofphp/php-cs-fixer": "^3.94",
-        "sympress/coding-standards": "@dev",
+        "sympress/coding-standards": "dev-main",
         "mockery/mockery": "^1.6",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.5",
