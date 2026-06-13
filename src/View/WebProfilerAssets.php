@@ -162,7 +162,7 @@ final class WebProfilerAssets
             }
         }
 
-        return dirname(__DIR__, 2) . '/resources/symfony/web-profiler-bundle/' . ltrim($relativePath, '/');
+        return dirname(__DIR__, 2) . '/Resources/symfony/web-profiler-bundle/' . ltrim($relativePath, '/');
     }
 
     /** @return list<string> */
@@ -171,8 +171,8 @@ final class WebProfilerAssets
         $normalized = ltrim($relativePath, '/');
 
         return [
-            dirname(__DIR__, 2) . '/resources/profiler/' . $normalized,
-            dirname(__DIR__, 2) . '/resources/symfony/web-profiler-bundle/' . $normalized,
+            dirname(__DIR__, 2) . '/Resources/profiler/' . $normalized,
+            dirname(__DIR__, 2) . '/Resources/symfony/web-profiler-bundle/' . $normalized,
         ];
     }
 
