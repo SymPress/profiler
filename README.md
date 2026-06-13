@@ -45,7 +45,7 @@ add_filter('profiler.collect', static fn (bool $collect): bool => $collect);
 ```
 
 Collection can also be controlled through the service parameters in
-`config/services.yaml`:
+`Resources/config/services.yaml`:
 
 ```yaml
 parameters:

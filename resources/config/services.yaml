@@ -11,11 +11,11 @@ services:
         public: false
 
     SymPress\Profiler\:
-        resource: '../src/'
+        resource: '../../src/'
         exclude:
-            - '../src/ProfilerBundle.php'
-            - '../src/Contract/'
-            - '../src/Value/'
+            - '../../src/ProfilerBundle.php'
+            - '../../src/Contract/'
+            - '../../src/Value/'
 
     SymPress\Profiler\Contract\ProfileStorageInterface:
         alias: SymPress\Profiler\Infrastructure\FilesystemProfileStorage
