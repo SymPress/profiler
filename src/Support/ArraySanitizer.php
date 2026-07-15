@@ -76,7 +76,7 @@ final class ArraySanitizer
     {
         $normalizedKey = strtolower($key);
 
-        foreach (['password', 'pass', 'pwd', 'nonce', 'token', 'authorization', 'cookie'] as $fragment) {
+        foreach (['password', 'pass', 'pwd', 'nonce', 'token', 'authorization', 'cookie', 'secret'] as $fragment) {
             if (str_contains($normalizedKey, $fragment)) {
                 return true;
             }

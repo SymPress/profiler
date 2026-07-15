@@ -6,9 +6,7 @@ Thanks for taking the time to improve SymPress Profiler.
 
 ```bash
 composer install
-composer test
-composer cs:analyze
-composer cs
+composer qa
 ```
 
 The package uses PHP 8.5, PHPUnit, PHPStan, PHP CS Fixer, and PHPCS with the

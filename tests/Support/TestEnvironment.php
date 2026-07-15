@@ -2,6 +2,40 @@
 
 declare(strict_types=1);
 
+final class ProfilerTestFilters
+{
+    /** @var array<string, array<int, list<callable>>> */
+    public static array $callbacks = [];
+
+    public static function reset(): void
+    {
+        self::$callbacks = [];
+    }
+}
+
+if (!function_exists('add_filter')) {
+    function add_filter(string $hook, callable $callback, int $priority = 10): void
+    {
+        ProfilerTestFilters::$callbacks[$hook][$priority][] = $callback;
+    }
+}
+
+if (!function_exists('apply_filters')) {
+    function apply_filters(string $hook, mixed $value, mixed ...$arguments): mixed
+    {
+        $callbacks = ProfilerTestFilters::$callbacks[$hook] ?? [];
+        ksort($callbacks);
+
+        foreach ($callbacks as $callbacksAtPriority) {
+            foreach ($callbacksAtPriority as $callback) {
+                $value = $callback($value, ...$arguments);
+            }
+        }
+
+        return $value;
+    }
+}
+
 if (!defined('ABSPATH')) {
     define('ABSPATH', dirname(__DIR__, 3) . '/');
 }

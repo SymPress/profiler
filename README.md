@@ -40,6 +40,10 @@ The profiler collects frontoffice requests in local and development
 environments by default. The toolbar links each request to a stored profile with
 all collector panels.
 
+See [`docs/architecture.md`](docs/architecture.md) for the hook and persistence
+lifecycle. Collector keys, priorities, payload fields, and sensitive data are
+cataloged in [`docs/collectors.json`](docs/collectors.json).
+
 ```php
 <?php
 
@@ -79,9 +83,7 @@ add_filter(
 
 ```bash
 composer install
-composer test
-composer cs:analyze
-composer cs
+composer qa
 ```
 
 Use `composer cs:fix` to apply automatic style fixes.

@@ -6,6 +6,7 @@ namespace SymPress\Profiler\Collector;
 
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Recorder\ProfilerErrorRecorder;
+use SymPress\Profiler\Support\ArraySanitizer;
 use SymPress\Profiler\Support\Html;
 use SymPress\Profiler\Support\HtmlString;
 use SymPress\Profiler\Value\ProfileContext;
@@ -18,6 +19,7 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
 
     public function __construct(
         private readonly ProfilerErrorRecorder $errors,
+        private readonly ArraySanitizer $sanitizer,
     ) {
     }
 
@@ -243,9 +245,20 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
             'captured_at' => $this->stringValue($entry, 'captured_at', gmdate(DATE_ATOM)),
             'source'      => $this->stringValue($entry, 'source', 'runtime'),
             'channel'     => $this->stringValue($entry, 'channel', 'app'),
-            'context'     => is_array($entry['context'] ?? null) ? $entry['context'] : [],
-            'extra'       => is_array($entry['extra'] ?? null) ? $entry['extra'] : [],
+            'context'     => $this->sanitizedArray($entry, 'context'),
+            'extra'       => $this->sanitizedArray($entry, 'extra'),
         ];
+    }
+
+    /**
+     * @param array<array-key, mixed> $entry
+     * @return array<array-key, mixed>
+     */
+    private function sanitizedArray(array $entry, string $key): array
+    {
+        $value = $entry[$key] ?? null;
+
+        return is_array($value) ? $this->sanitizer->sanitizeArray($value) : [];
     }
 
     /** @param array<array-key, mixed> $entry */
