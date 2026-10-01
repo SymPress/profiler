@@ -7,6 +7,7 @@ namespace SymPress\Profiler\Application;
 use SymPress\Kernel\WpContext;
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Contract\ProfileStorageInterface;
+use SymPress\Profiler\Support\ArraySanitizer;
 use SymPress\Profiler\Value\ProfileContext;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ProfileSearchCriteria;
@@ -163,7 +164,7 @@ final class Profiler
         }
 
         if (preg_match('/<\/body>/i', $content) === 1) {
-            $injected = preg_replace('/<\/body>/i', $toolbar . '</body>', $content, 1);
+            $injected = preg_replace_callback('/<\/body>/i', static fn (): string => $toolbar . '</body>', $content, 1);
 
             if (is_string($injected)) {
                 return $injected;
@@ -175,7 +176,7 @@ final class Profiler
 
     private function ensureProfile(bool $finalize = false): ?ProfileRecord
     {
-        if (!$this->started || $this->disabled) {
+        if (!$this->started || $this->disabled || !$this->gate->canAccessProfiler()) {
             return null;
         }
 
@@ -212,9 +213,7 @@ final class Profiler
 
         $this->storage->save($this->profile);
 
-        if ($finalize) {
-            $this->finalized = true;
-        }
+        $this->finalized = true;
 
         return $this->profile;
     }
@@ -222,15 +221,17 @@ final class Profiler
     /** @return array<string, mixed> */
     private function meta(ProfileContext $context): array
     {
-        $requestUri = $this->serverValue('REQUEST_URI', '/');
+        $sanitizer = new ArraySanitizer();
+        $sanitizedUri = $sanitizer->sanitize($this->serverValue('REQUEST_URI', '/'));
+        $requestUri = is_string($sanitizedUri) ? $sanitizedUri : '/';
 
         return [
             'method'         => strtoupper($this->serverValue('REQUEST_METHOD', 'GET')),
             'uri'            => $requestUri,
             'path'           => (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/'),
-            'url'            => $this->currentUrl(),
+            'url'            => $sanitizer->sanitize($this->currentUrl()),
             'ip'             => $this->serverValue('REMOTE_ADDR'),
-            'referer'        => $this->serverValue('HTTP_REFERER'),
+            'referer'        => $sanitizer->sanitize($this->serverValue('HTTP_REFERER')),
             'content_type'   => $this->serverValue('CONTENT_TYPE'),
             'status_code'    => $context->statusCode(),
             'duration_ms'    => $context->durationMs(),

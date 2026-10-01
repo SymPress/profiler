@@ -116,12 +116,23 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
             return [];
         }
 
-        $crons = _get_cron_array();
+        return $this->eventsFromCron(_get_cron_array());
+    }
 
+    /**
+     * @param array<array-key, mixed> $crons
+     * @return list<array{timestamp: int, next_run: string, status: string, hook: string, schedule: string, interval: string, args_count: int}>
+     */
+    private function eventsFromCron(array $crons): array
+    {
         $events = [];
         $now = time();
 
         foreach ($crons as $timestamp => $hooks) {
+            if (!is_array($hooks)) {
+                continue;
+            }
+
             foreach ($hooks as $hook => $instances) {
                 if (!is_array($instances)) {
                     continue;

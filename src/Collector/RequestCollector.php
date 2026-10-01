@@ -43,11 +43,11 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
 
         return [
             'method'                => $requestMethod,
-            'uri'                   => $requestUri,
-            'url'                   => $this->currentUrl(),
+            'uri'                   => $this->sanitizer->sanitize($requestUri),
+            'url'                   => $this->sanitizer->sanitize($this->currentUrl()),
             'ip'                    => $this->serverValue('REMOTE_ADDR'),
             'user_agent'            => $this->serverValue('HTTP_USER_AGENT'),
-            'referer'               => $this->serverValue('HTTP_REFERER'),
+            'referer'               => $this->sanitizer->sanitize($this->serverValue('HTTP_REFERER')),
             'content_type'          => $this->serverValue('CONTENT_TYPE'),
             'context'               => $this->contextLabel(),
             'context_flags'         => $this->contextFlags(),
@@ -60,7 +60,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             'peak_memory_mb'        => $context->peakMemoryMb(),
             'template'              => $context->template(),
             'request_headers'       => $this->requestHeaders(),
-            'response_headers'      => $responseHeaders,
+            'response_headers'      => $this->sanitizer->sanitizeArray($responseHeaders),
             'response_content_type' => $responseHeaders['content-type'] ?? '',
             // phpcs:disable WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing
             'query'                 => $this->requestArray($_GET),
@@ -259,11 +259,9 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     {
         $server = [];
 
-        foreach ($_SERVER as $key => $value) {
-            if (!is_string($key)) {
-                continue;
-            }
-
+        foreach (['REQUEST_METHOD', 'SERVER_PROTOCOL', 'SERVER_NAME', 'SERVER_PORT', 'HTTPS', 'REMOTE_ADDR', 'CONTENT_TYPE', 'CONTENT_LENGTH'] as $key) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- allowlisted diagnostic fields are sanitized below.
+            $value = $_SERVER[$key] ?? null;
             $server[$key] = $value;
         }
 

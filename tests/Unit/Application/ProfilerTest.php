@@ -70,6 +70,31 @@ final class ProfilerTest extends TestCase
         ], $storage->saved->collector('contract'));
     }
 
+    public function testHtmlCallbackPreservesDollarSequencesAndCollectsOnlyOnce(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
+        $collector = $this->collector();
+        $storage = $this->storage();
+        $urls = new ProfilerUrlGenerator();
+        $context = WpContext::new()->force(WpContext::FRONTOFFICE);
+        $profiler = new Profiler([$collector], $this->gate($context), $storage,
+            new ProfileViewBuilder([$collector], new ToolbarRenderer(new WebProfilerAssets(), $urls)), $urls, $context);
+        $profiler->start();
+        ob_start();
+        $profiler->beginHtmlBuffer();
+        echo '<html><body>literal $1 and ${2}</body></html>';
+        ob_end_flush();
+        $content = ob_get_clean();
+        self::assertIsString($content);
+        self::assertStringContainsString('literal $1 and ${2}', $content);
+        self::assertStringContainsString('Cost $1', $content);
+        self::assertStringContainsString('${2}', $content);
+        $profiler->finish();
+        $profiler->finish();
+        self::assertSame(1, $storage->saveCount);
+    }
+
     private function collector(): DataCollectorInterface
     {
         return new class implements DataCollectorInterface {
@@ -98,7 +123,7 @@ final class ProfilerTest extends TestCase
 
             public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
             {
-                return null;
+                return new ToolbarBlock('contract', 'Cost $1', '${2}', '', '/', 'cyan');
             }
 
             public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
@@ -112,9 +137,11 @@ final class ProfilerTest extends TestCase
     {
         return new class implements ProfileStorageInterface {
             public ?ProfileRecord $saved = null;
+            public int $saveCount = 0;
 
             public function save(ProfileRecord $profile): void
             {
+                $this->saveCount++;
                 $this->saved = $profile;
             }
 

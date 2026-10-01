@@ -58,11 +58,11 @@ final class ArraySanitizer
         }
 
         if ($value instanceof \Stringable) {
-            return $this->truncate((string) $value);
+            return $this->truncate($this->redactString((string) $value));
         }
 
         if (is_string($value)) {
-            return $this->truncate($value);
+            return $this->truncate($this->redactString($value));
         }
 
         if (is_object($value)) {
@@ -76,13 +76,25 @@ final class ArraySanitizer
     {
         $normalizedKey = strtolower($key);
 
-        foreach (['password', 'pass', 'pwd', 'nonce', 'token', 'authorization', 'cookie', 'secret'] as $fragment) {
+        foreach (['password', 'pass', 'pwd', 'nonce', 'token', 'authorization', 'cookie', 'secret', 'credential', 'api_key', 'apikey', 'private_key', 'access_key', 'key', 'dsn', 'wordpress_', 'session'] as $fragment) {
             if (str_contains($normalizedKey, $fragment)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function redactString(string $value): string
+    {
+        $value = preg_replace('~([a-z][a-z0-9+.-]*://)[^/@\s]+:[^/@\s]+@~i', '$1[redacted]@', $value) ?? '[redacted]';
+
+        return preg_replace_callback(
+            '~([?&])([^=&#\s]+)=([^&#\s]*)~',
+            fn (array $match): string => $match[1] . $match[2] . '='
+                . ($this->shouldRedact(rawurldecode($match[2])) ? '[redacted]' : $match[3]),
+            $value,
+        ) ?? '[redacted]';
     }
 
     private function truncate(string $value): string

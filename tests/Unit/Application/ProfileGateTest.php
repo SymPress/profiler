@@ -19,9 +19,10 @@ final class ProfileGateTest extends TestCase
         $_GET = [];
         $_POST = [];
         $_SERVER = [];
+        unset($GLOBALS['profiler_test_logged_in'], $GLOBALS['profiler_test_can_manage']);
     }
 
-    public function test_it_collects_profiles_before_pluggable_user_functions_are_available(): void
+    public function test_it_rejects_anonymous_requests_even_in_local_environment(): void
     {
         $gate = new ProfileGate(
             $this->config(EnvConfig::LOCAL),
@@ -29,8 +30,9 @@ final class ProfileGateTest extends TestCase
             new ProfilerRequestMatcher(),
         );
 
-        self::assertTrue($gate->shouldCollect());
-        self::assertTrue($gate->canAccessProfiler());
+        $GLOBALS['profiler_test_logged_in'] = false;
+        self::assertFalse($gate->shouldCollect());
+        self::assertFalse($gate->canAccessProfiler());
     }
 
     public function test_it_shows_toolbar_in_development_html_requests(): void
@@ -141,6 +143,27 @@ final class ProfileGateTest extends TestCase
         );
 
         self::assertTrue($gate->shouldReplaceToolbarAfterAjax());
+    }
+
+    public function testUnauthorizedCapabilityCannotCollectOrViewEvenInDevelopment(): void
+    {
+        $GLOBALS['profiler_test_can_manage'] = false;
+        $gate = new ProfileGate($this->config(EnvConfig::LOCAL), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+        self::assertFalse($gate->canAccessProfiler());
+        self::assertFalse($gate->shouldCollect());
+        self::assertFalse($gate->shouldInjectToolbar());
+    }
+
+    public function testProductionOptInStillRequiresAuthenticatedAdministrator(): void
+    {
+        \ProfilerTestFilters::reset();
+        add_filter('profiler.enable_outside_development', static fn (): bool => true);
+        $gate = new ProfileGate($this->config(EnvConfig::PRODUCTION), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+        $GLOBALS['profiler_test_logged_in'] = false;
+        self::assertFalse($gate->shouldCollect());
+        $GLOBALS['profiler_test_logged_in'] = true;
+        self::assertTrue($gate->shouldCollect());
+        \ProfilerTestFilters::reset();
     }
 
     private function config(string $environment): SiteConfig

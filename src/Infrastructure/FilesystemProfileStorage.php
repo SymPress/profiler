@@ -7,6 +7,7 @@ namespace SymPress\Profiler\Infrastructure;
 use SymPress\Profiler\Contract\ProfileStorageInterface;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ProfileSearchCriteria;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
 final class FilesystemProfileStorage implements ProfileStorageInterface
@@ -30,11 +31,27 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
             ),
         );
 
+        $this->writeIndex($profile);
+
         if (random_int(1, 20) !== 1) {
             return;
         }
 
         $this->cleanup();
+    }
+
+    private function writeIndex(ProfileRecord $profile): void
+    {
+        $request = $profile->collector('request');
+        $this->filesystem->dumpFile(
+            $this->profileFile($profile->token) . '.index',
+            json_encode([
+                'token'      => $profile->token,
+                'created_at' => $profile->createdAt,
+                'meta'       => $profile->meta,
+                'collectors' => ['request' => array_intersect_key($request, array_flip(['referer', 'user_agent']))],
+            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+        );
     }
 
     public function load(string $token): ?ProfileRecord
@@ -62,17 +79,30 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
 
     public function latest(int $limit = 20): array
     {
-        return array_slice($this->allProfiles(), 0, $limit);
+        return $this->search(new ProfileSearchCriteria(limit: $limit));
     }
 
     public function search(ProfileSearchCriteria $criteria): array
     {
-        $profiles = array_filter(
-            $this->allProfiles(),
-            fn (ProfileRecord $profile): bool => $this->matches($profile, $criteria),
-        );
+        $profiles = [];
 
-        return array_slice(array_values($profiles), 0, $criteria->limit);
+        foreach ($this->allProfiles() as $summary) {
+            if (!$this->matches($summary, $criteria)) {
+                continue;
+            }
+
+            $profile = $this->load($summary->token);
+
+            if ($profile instanceof ProfileRecord) {
+                $profiles[] = $profile;
+            }
+
+            if (count($profiles) >= $criteria->limit) {
+                break;
+            }
+        }
+
+        return $profiles;
     }
 
     private function cleanup(): void
@@ -85,7 +115,7 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
                 continue;
             }
 
-            $this->filesystem->remove($file);
+            $this->filesystem->remove([$file, $file . '.index']);
         }
     }
 
@@ -106,10 +136,22 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
 
         foreach ($files as $file) {
             $token = pathinfo($file, PATHINFO_FILENAME);
-            $profile = $this->load($token);
+            $indexFile = $file . '.index';
+            $index = is_file($indexFile) ? file_get_contents($indexFile) : false;
+            $decoded = is_string($index) ? json_decode($index, true) : null;
+            $profile = is_array($decoded) ? ProfileRecord::fromArray($decoded) : $this->load($token);
 
             if (!($profile instanceof ProfileRecord)) {
                 continue;
+            }
+
+            if (!is_array($decoded)) {
+                try {
+                    // Backfill legacy files once so subsequent searches use small indexes.
+                    $this->writeIndex($profile);
+                } catch (IOExceptionInterface) {
+                    // Read-only legacy stores retain compatibility through the full-file fallback.
+                }
             }
 
             $profiles[] = $profile;

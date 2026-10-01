@@ -157,7 +157,7 @@ final class CollectorCatalogTest extends TestCase
 
                     return $tag;
                 },
-                $this->serviceTags($service, 'kernel.hook'),
+                $this->serviceTags($service, $entry['tag'] ?? 'kernel.hook'),
             );
             self::assertSame($entry['hooks'], $tags);
 
@@ -175,7 +175,7 @@ final class CollectorCatalogTest extends TestCase
         $configuredClasses = [];
 
         foreach ($services as $class => $service) {
-            if (is_string($class) && is_array($service) && $this->serviceTags($service, 'kernel.hook') !== []) {
+            if (is_string($class) && is_array($service) && ($this->serviceTags($service, 'kernel.hook') !== [] || $this->serviceTags($service, 'profiler.hook') !== [])) {
                 $configuredClasses[] = $class;
             }
         }
