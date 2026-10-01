@@ -33,4 +33,13 @@ final class RequestSecurityTest extends TestCase
             $_COOKIE = $_SERVER = $_POST = [];
         }
     }
+
+    public function testUserinfoIsMaskedRegardlessOfPasswordSyntax(): void
+    {
+        $sanitizer = new ArraySanitizer();
+        foreach (['review-canary-value', 'user:', 'user:review-canary-value', 'review%40canary%3Avalue'] as $userinfo) {
+            self::assertSame('https://[redacted]@example.test/path', $sanitizer->sanitize('https://' . $userinfo . '@example.test/path'));
+        }
+        self::assertSame('https://example.test/path?view=public', $sanitizer->sanitize('https://example.test/path?view=public'));
+    }
 }
