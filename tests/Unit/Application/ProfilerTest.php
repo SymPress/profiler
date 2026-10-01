@@ -123,6 +123,9 @@ final class ProfilerTest extends TestCase
         $extension = $this->collector([
             'entries' => array_fill(0, 61, ['deep' => ['deeper' => ['detail' => ['message' => $ordinary, 'url' => $url]]]]),
             'credentials' => ['nested' => ['access' => $secret]],
+            'password' => 918273645,
+            'nested' => ['token' => 123456789.5, 'secret' => false],
+            'credential_scalars' => [true, null, 987654321],
             'has_auth_cookie' => true,
         ]);
         $collectors = [$extension, new HttpClientCollector($http), new ExceptionCollector($errors), new LogCollector($errors, new ArraySanitizer()),
@@ -144,6 +147,12 @@ final class ProfilerTest extends TestCase
             self::assertCount(61, $profile->collector('contract')['entries']);
             self::assertSame($ordinary, $profile->collector('contract')['entries'][60]['deep']['deeper']['detail']['message']);
             self::assertTrue($profile->collector('contract')['has_auth_cookie']);
+            self::assertSame('[redacted]', $profile->collector('contract')['password']);
+            self::assertSame(['token' => '[redacted]', 'secret' => '[redacted]'], $profile->collector('contract')['nested']);
+            self::assertSame(['[redacted]', '[redacted]', '[redacted]'], $profile->collector('contract')['credential_scalars']);
+            self::assertStringNotContainsString('918273645', $json);
+            self::assertStringNotContainsString('123456789.5', $json);
+            self::assertStringNotContainsString('987654321', $json);
             foreach ($collectors as $collector) {
                 self::assertStringNotContainsString($secret, $collector->renderPanel($profile->collector($collector->getKey()), $profile)->html);
             }
