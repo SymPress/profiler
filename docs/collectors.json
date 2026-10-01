@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "persistence_redaction": "All collector payloads cross ArraySanitizer::redactPayload before JSON storage and views, including HTTP/error/throwable messages and extension credentials; ordinary array sizes, nesting and message lengths are preserved.",
   "hook_services": [
     {
       "class": "SymPress\\Profiler\\Hook\\GatedHooksBootstrap",

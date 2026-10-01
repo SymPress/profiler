@@ -15,6 +15,14 @@ use SymPress\Profiler\Application\ProfilerRequestMatcher;
 use SymPress\Profiler\Application\ProfilerUrlGenerator;
 use SymPress\Profiler\Application\ProfileViewBuilder;
 use SymPress\Profiler\Collector\CollectorPanel;
+use SymPress\Profiler\Collector\HttpClientCollector;
+use SymPress\Profiler\Collector\ExceptionCollector;
+use SymPress\Profiler\Collector\RequestCollector;
+use SymPress\Profiler\Collector\LogCollector;
+use SymPress\Profiler\Infrastructure\FilesystemProfileStorage;
+use SymPress\Profiler\Recorder\ProfilerHttpClientRecorder;
+use SymPress\Profiler\Recorder\ProfilerErrorRecorder;
+use SymPress\Profiler\Support\ArraySanitizer;
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Contract\ProfileStorageInterface;
 use SymPress\Profiler\Value\ProfileContext;
@@ -95,9 +103,65 @@ final class ProfilerTest extends TestCase
         self::assertSame(1, $storage->saveCount);
     }
 
-    private function collector(): DataCollectorInterface
+    public function testStoredAndRenderedDiagnosticsRedactAllCollectorCredentialsWithoutTruncatingPayloads(): void
     {
-        return new class implements DataCollectorInterface {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_HOST'] = 'example.test';
+        $secret = 'review-canary-value';
+        $url = 'https://user:' . $secret . '@example.test/?access_token=' . $secret . '&view=public';
+        $context = WpContext::new()->force(WpContext::FRONTOFFICE);
+        $gate = $this->gate($context);
+        $http = new ProfilerHttpClientRecorder($gate);
+        $http->enable();
+        $http->track(false, [], $url);
+        $http->record(new \WP_Error('canary', 'Connection failed: ' . $url), 'response', 'test', [], $url);
+        $errors = new ProfilerErrorRecorder($gate);
+        $errors->enable();
+        $errors->record(E_WARNING, 'Warning: ' . $url);
+        $errors->captureShutdown();
+        $ordinary = str_repeat('ordinary message ', 100);
+        $extension = $this->collector([
+            'entries' => array_fill(0, 61, ['deep' => ['deeper' => ['detail' => ['message' => $ordinary, 'url' => $url]]]]),
+            'credentials' => ['nested' => ['access' => $secret]],
+            'has_auth_cookie' => true,
+        ]);
+        $collectors = [$extension, new HttpClientCollector($http), new ExceptionCollector($errors), new LogCollector($errors, new ArraySanitizer()),
+            new RequestCollector(new ArraySanitizer(), $context)];
+        $directory = sys_get_temp_dir() . '/profiler-redaction-' . bin2hex(random_bytes(6));
+        $storage = new FilesystemProfileStorage($directory);
+        $urls = new ProfilerUrlGenerator();
+        $profiler = new Profiler($collectors, $gate, $storage,
+            new ProfileViewBuilder($collectors, new ToolbarRenderer(new WebProfilerAssets(), $urls)), $urls, $context);
+
+        try {
+            $profiler->start();
+            $profiler->recordThrowable(new \RuntimeException('Failure: ' . $url));
+            $profiler->finish();
+            $profile = $storage->latest(1)[0];
+            $json = (string) file_get_contents($directory . '/' . $profile->token . '.json');
+            self::assertStringNotContainsString($secret, $json);
+            self::assertStringContainsString('view=public', $json);
+            self::assertCount(61, $profile->collector('contract')['entries']);
+            self::assertSame($ordinary, $profile->collector('contract')['entries'][60]['deep']['deeper']['detail']['message']);
+            self::assertTrue($profile->collector('contract')['has_auth_cookie']);
+            foreach ($collectors as $collector) {
+                self::assertStringNotContainsString($secret, $collector->renderPanel($profile->collector($collector->getKey()), $profile)->html);
+            }
+        } finally {
+            foreach (glob($directory . '/*') ?: [] as $file) {
+                unlink($file);
+            }
+            rmdir($directory);
+        }
+    }
+
+    /** @param array<string, mixed> $extra */
+    private function collector(array $extra = []): DataCollectorInterface
+    {
+        return new class ($extra) implements DataCollectorInterface {
+            /** @param array<string, mixed> $extra */
+            public function __construct(private readonly array $extra) {}
+
             public function getKey(): string
             {
                 return 'contract';
@@ -118,7 +182,7 @@ final class ProfilerTest extends TestCase
                 return [
                     'template' => $context->template(),
                     'throwable_count' => count($context->throwables()),
-                ];
+                ] + $this->extra;
             }
 
             public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock

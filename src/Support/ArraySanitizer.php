@@ -21,6 +21,40 @@ final class ArraySanitizer
         return is_array($sanitized) ? $sanitized : [];
     }
 
+    /**
+     * Redact diagnostic payloads without the request input's truncation limits.
+     *
+     * @template TKey of array-key
+     * @param array<TKey, mixed> $value
+     * @return array<TKey, mixed>
+     */
+    public function redactPayload(array $value, int $depth = 0, bool $credentials = false): array
+    {
+        $redacted = [];
+
+        foreach ($value as $key => $item) {
+            $sensitive = $credentials || (is_string($key) && $this->shouldRedact($key));
+
+            if (is_array($item)) {
+                // Keep the cookie map: its individual authentication names are redacted.
+                $redacted[$key] = $depth >= 64
+                    ? '[depth limit reached]'
+                    : $this->redactPayload($item, $depth + 1, $sensitive && $key !== 'cookies');
+            } elseif (is_string($item) || $item instanceof \Stringable) {
+                $redacted[$key] = $sensitive ? '[redacted]' : $this->redactString((string) $item);
+            } elseif (is_object($item)) {
+                $redacted[$key] = sprintf('[object %s]', $item::class);
+            } elseif (is_resource($item)) {
+                $redacted[$key] = '[resource]';
+            } else {
+                // Counts and booleans such as has_auth_cookie are diagnostic summaries.
+                $redacted[$key] = $item;
+            }
+        }
+
+        return $redacted;
+    }
+
     public function sanitize(mixed $value, int $depth = 0, ?string $key = null): mixed
     {
         if ($key !== null && $this->shouldRedact($key)) {
@@ -87,7 +121,7 @@ final class ArraySanitizer
 
     private function redactString(string $value): string
     {
-        $value = preg_replace('~([a-z][a-z0-9+.-]*://)[^/@\s]+:[^/@\s]+@~i', '$1[redacted]@', $value) ?? '[redacted]';
+        $value = preg_replace('~([a-z][a-z0-9+.-]*://)[^/@\s]+@~i', '$1[redacted]@', $value) ?? '[redacted]';
 
         return preg_replace_callback(
             '~([?&])([^=&#\s]+)=([^&#\s]*)~',

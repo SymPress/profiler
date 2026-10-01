@@ -199,9 +199,10 @@ final class Profiler
         );
 
         $collectorPayloads = [];
+        $sanitizer = new ArraySanitizer();
 
         foreach ($this->collectors as $collector) {
-            $collectorPayloads[$collector->getKey()] = $collector->collect($context);
+            $collectorPayloads[$collector->getKey()] = $sanitizer->redactPayload($collector->collect($context));
         }
 
         $this->profile = new ProfileRecord(

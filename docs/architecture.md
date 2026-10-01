@@ -76,6 +76,15 @@ headers and nested credential, key and DSN fields are redacted before storage.
 URL userinfo is redacted by the sanitizer. Stored data remains privileged debug
 data and the cache directory must remain outside HTTP access.
 
+Every collector, including extension collectors, crosses a final recursive
+redaction boundary before storage and rendering. It masks URL userinfo (also
+username-only and empty-password forms), sensitive URL query values and named
+credential fields in HTTP/error/exception payloads. Diagnostic arrays, counts,
+booleans and ordinary long messages are retained without the request input's
+50-item/500-character truncation; malformed nesting beyond 64 levels is closed
+with a placeholder. Custom collectors must still avoid collecting unlabeled
+secret text that no generic redactor can identify.
+
 HTML insertion uses callback replacements in both the output buffer and toolbar
 template, preserving literal dollar sequences. The first collection finalizes
 and saves a profile; shutdown and subsequent buffer callbacks reuse it.
