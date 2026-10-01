@@ -223,7 +223,7 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
      *   total_duration_ms: float
      * }
      */
-    // phpcs:ignore Inpsyde.CodeQuality.FunctionLength.TooLong -- single-pass query aggregation is easier to audit than splitting the request-local state machine further.
+    // phpcs:ignore SymPress.Functions.FunctionLength.TooLong -- single-pass query aggregation is easier to audit than splitting the request-local state machine further.
     private function collectQueryData(mixed $wpdb): array
     {
         $queries = [];
