@@ -25,9 +25,6 @@ services:
         alias: SymPress\Profiler\Application\Profiler
         public: true
 
-    debug.stopwatch:
-        alias: SymPress\Profiler\Stopwatch\ProfilerStopwatch
-
     profiler.is_disabled_state_checker:
         alias: SymPress\Profiler\Application\ProfilerDisabledStateChecker
 
