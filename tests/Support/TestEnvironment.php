@@ -20,6 +20,13 @@ if (!function_exists('add_filter')) {
     }
 }
 
+if (!function_exists('add_action')) {
+    function add_action(string $hook, callable $callback, int $priority = 10, int $accepted_args = 1): void
+    {
+        add_filter($hook, $callback, $priority);
+    }
+}
+
 if (!function_exists('apply_filters')) {
     function apply_filters(string $hook, mixed $value, mixed ...$arguments): mixed
     {
@@ -43,7 +50,7 @@ if (!defined('ABSPATH')) {
 if (!function_exists('current_user_can')) {
     function current_user_can(string $capability): bool
     {
-        return $capability === 'manage_options';
+        return $capability === 'manage_options' && ($GLOBALS['profiler_test_can_manage'] ?? true);
     }
 }
 
@@ -108,7 +115,7 @@ if (!function_exists('wp_timezone_string')) {
 if (!function_exists('is_user_logged_in')) {
     function is_user_logged_in(): bool
     {
-        return false;
+        return $GLOBALS['profiler_test_logged_in'] ?? true;
     }
 }
 

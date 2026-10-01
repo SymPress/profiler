@@ -24,11 +24,29 @@ final class FilesystemProfileStorageTest extends TestCase
             return;
         }
 
-        foreach (glob($this->storageDirectory . '/*.json') ?: [] as $file) {
+        foreach (glob($this->storageDirectory . '/*') ?: [] as $file) {
             unlink($file);
         }
 
         rmdir($this->storageDirectory);
+    }
+
+    public function testSearchUsesSmallIndexesBeforeLoadingSelectedPayloads(): void
+    {
+        $storage = new FilesystemProfileStorage($this->storageDirectory);
+        $profile = new ProfileRecord('indexed', '2026-10-01T10:00:00+00:00', ['method' => 'GET'], ['request' => ['body' => str_repeat('x', 100000)]]);
+        $storage->save($profile);
+        $index = (string) file_get_contents($this->storageDirectory . '/indexed.json.index');
+        self::assertLessThan(500, strlen($index));
+        self::assertStringNotContainsString('body', $index);
+        unlink($this->storageDirectory . '/indexed.json.index');
+        self::assertCount(1, $storage->latest(1));
+        self::assertFileExists($this->storageDirectory . '/indexed.json.index');
+        // The search predicate comes from the index even if a payload is separately changed.
+        $changed = new ProfileRecord('indexed', $profile->createdAt, ['method' => 'POST'], $profile->collectors);
+        file_put_contents($this->storageDirectory . '/indexed.json', json_encode($changed, JSON_THROW_ON_ERROR));
+        self::assertSame([], $storage->search(new ProfileSearchCriteria(method: 'POST')));
+        self::assertCount(1, $storage->search(new ProfileSearchCriteria(method: 'GET')));
     }
 
     public function test_it_saves_and_loads_profiles(): void

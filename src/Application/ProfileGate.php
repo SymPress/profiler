@@ -31,11 +31,8 @@ final class ProfileGate
             return false;
         }
 
-        if ($this->isDevelopmentEnvironment()) {
-            return true;
-        }
-
-        return $this->canRunOutsideDevelopment() && $this->currentUserCanManageOptions();
+        return $this->currentUserCanManageOptions()
+            && ($this->isDevelopmentEnvironment() || $this->canRunOutsideDevelopment());
     }
 
     public function shouldCollect(): bool
@@ -53,7 +50,7 @@ final class ProfileGate
             return false;
         }
 
-        if (!$this->isDevelopmentEnvironment() && !$this->canRunOutsideDevelopment()) {
+        if (!$this->canAccessProfiler()) {
             return false;
         }
 
@@ -190,7 +187,9 @@ final class ProfileGate
             return false;
         }
 
-        return current_user_can('manage_options');
+        return function_exists('is_user_logged_in')
+            && is_user_logged_in()
+            && current_user_can('manage_options');
     }
 
     private function isProfilerPageRequest(): bool

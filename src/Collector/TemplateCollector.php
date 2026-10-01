@@ -205,6 +205,7 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
             $type = is_object($object) && is_scalar($object->post_type ?? null) ? (string) $object->post_type : 'post';
             $slug = is_object($object) && is_scalar($object->post_name ?? null) ? (string) $object->post_name : '';
 
+            // @phpstan-ignore notIdentical.alwaysTrue (defensive handling of filtered WordPress object properties.)
             if ($type !== '') {
                 $candidates[] = 'single-' . $type . ($slug !== '' ? '-' . $slug : '') . '.php';
                 $candidates[] = 'single-' . $type . '.php';

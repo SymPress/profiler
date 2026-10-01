@@ -8,7 +8,8 @@ delegate to `ProfilerHooks`, which keeps the application lifecycle in
 
 | Hook | Method | Contract |
 |---|---|---|
-| `muplugins_loaded` at 25 | `start` | Gate the request, initialize timing/token, emit debug headers. |
+| `plugins_loaded` at -1000 | `GatedHooksBootstrap::register` | After pluggables load, authenticate and require `manage_options`; register collection hooks only when the gate opens. |
+| `plugins_loaded` at 25 | `start` | Initialize timing/token and emit debug headers for authorized requests. |
 | `template_redirect` at -1000 | `beginFrontendBuffer` | Start toolbar buffering only for accessible HTML GET requests. |
 | `template_include` at 1000 | `captureTemplate` | Preserve and record the selected template path. |
 | `kernel.error` (`App::ACTION_ERROR`) | `recordThrowable` | Add a normalized throwable summary to the request context. |
@@ -58,3 +59,27 @@ timestamp, source, channel, context, and extra before persistence.
 Changing a collector key is a persisted-data compatibility change. Changing a
 payload key requires updating its renderer, behavior tests, and catalog entry in
 the same commit.
+
+## Authorization and persisted data
+
+Local/development access still requires an authenticated WordPress user with
+`manage_options`. Production additionally requires the explicit
+`profiler.enable_outside_development` opt-in; that filter cannot authorize an
+anonymous visitor. Endpoints, toolbar and collection use the same authorization
+boundary. The route hook remains registered to return 403 for denied requests;
+collection/recorder hooks are registered only after the gate opens at
+`plugins_loaded`, after WordPress pluggables become available.
+
+Request server diagnostics use an explicit allowlist and never include the
+process environment. WordPress authentication cookies, authorization/set-cookie
+headers and nested credential, key and DSN fields are redacted before storage.
+URL userinfo is redacted by the sanitizer. Stored data remains privileged debug
+data and the cache directory must remain outside HTTP access.
+
+HTML insertion uses callback replacements in both the output buffer and toolbar
+template, preserving literal dollar sequences. The first collection finalizes
+and saves a profile; shutdown and subsequent buffer callbacks reuse it.
+Small `.json.index` sidecars hold search metadata; search opens full collector
+JSON only for matching result profiles. Existing profiles without sidecars are decoded once and backfilled for subsequent
+searches. Read-only legacy stores keep a compatible full-file fallback. Sidecars
+expire with their profiles.

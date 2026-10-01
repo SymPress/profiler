@@ -2,6 +2,14 @@
   "version": 1,
   "hook_services": [
     {
+      "class": "SymPress\\Profiler\\Hook\\GatedHooksBootstrap",
+      "role": "lifecycle",
+      "collector_keys": ["*"],
+      "hooks": [
+        {"hook": "plugins_loaded", "method": "register", "priority": -1000}
+      ]
+    },
+    {
       "class": "SymPress\\Profiler\\Hook\\ProfilerRouteHooks",
       "role": "route",
       "collector_keys": [],
@@ -14,19 +22,20 @@
       "role": "lifecycle",
       "collector_keys": ["*"],
       "hooks": [
-        {"hook": "muplugins_loaded", "method": "start", "priority": 25},
+        {"hook": "plugins_loaded", "method": "start", "priority": 25},
         {"hook": "template_include", "method": "captureTemplate", "type": "filter", "priority": 1000},
         {"hook": "template_redirect", "method": "beginFrontendBuffer", "priority": -1000},
         {"hook": "kernel.error", "method": "recordThrowable"},
         {"hook": "shutdown", "method": "finish", "priority": 999999}
-      ]
+      ],
+      "tag": "profiler.hook"
     },
     {
       "class": "SymPress\\Profiler\\Recorder\\ProfilerLifecycleRecorder",
       "role": "recorder",
       "collector_keys": ["performance", "template"],
       "hooks": [
-        {"hook": "muplugins_loaded", "method": "bootstrap", "priority": 30},
+        {"hook": "plugins_loaded", "method": "bootstrap", "priority": 30},
         {"hook": "plugins_loaded", "method": "mark"},
         {"hook": "setup_theme", "method": "mark"},
         {"hook": "after_setup_theme", "method": "mark"},
@@ -38,45 +47,50 @@
         {"hook": "template_redirect", "method": "mark"},
         {"hook": "template_include", "method": "captureTemplate", "type": "filter", "priority": 999},
         {"hook": "shutdown", "method": "mark", "priority": 900000}
-      ]
+      ],
+      "tag": "profiler.hook"
     },
     {
       "class": "SymPress\\Profiler\\Recorder\\ProfilerErrorRecorder",
       "role": "recorder",
       "collector_keys": ["exceptions", "logs"],
       "hooks": [
-        {"hook": "muplugins_loaded", "method": "enable", "priority": 35},
+        {"hook": "plugins_loaded", "method": "enable", "priority": 35},
         {"hook": "shutdown", "method": "captureShutdown", "priority": 950000}
-      ]
+      ],
+      "tag": "profiler.hook"
     },
     {
       "class": "SymPress\\Profiler\\Recorder\\ProfilerHttpClientRecorder",
       "role": "recorder",
       "collector_keys": ["http_client"],
       "hooks": [
-        {"hook": "muplugins_loaded", "method": "enable", "priority": 35},
+        {"hook": "plugins_loaded", "method": "enable", "priority": 35},
         {"hook": "pre_http_request", "method": "track", "type": "filter", "accepted_args": 3},
         {"hook": "http_api_debug", "method": "record", "accepted_args": 5}
-      ]
+      ],
+      "tag": "profiler.hook"
     },
     {
       "class": "SymPress\\Profiler\\Recorder\\ProfilerTemplateRecorder",
       "role": "recorder",
       "collector_keys": ["template"],
       "hooks": [
-        {"hook": "muplugins_loaded", "method": "enable", "priority": 35},
+        {"hook": "plugins_loaded", "method": "enable", "priority": 35},
         {"hook": "get_template_part", "method": "recordTemplatePart", "accepted_args": 4}
-      ]
+      ],
+      "tag": "profiler.hook"
     },
     {
       "class": "SymPress\\Profiler\\Recorder\\ProfilerBlockRecorder",
       "role": "recorder",
       "collector_keys": ["blocks"],
       "hooks": [
-        {"hook": "muplugins_loaded", "method": "enable", "priority": 35},
+        {"hook": "plugins_loaded", "method": "enable", "priority": 35},
         {"hook": "render_block_data", "method": "start", "type": "filter", "accepted_args": 3},
         {"hook": "render_block", "method": "finish", "type": "filter", "accepted_args": 3}
-      ]
+      ],
+      "tag": "profiler.hook"
     }
   ],
   "external_filters": [

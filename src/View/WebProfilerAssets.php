@@ -71,9 +71,9 @@ final class WebProfilerAssets
     ): string {
 
         $template = $this->contents('views/Profiler/toolbar_js.html.twig');
-        $template = preg_replace(
+        $template = preg_replace_callback(
             "~\\{\\{\\s*include\\('@WebProfiler/Profiler/toolbar\\.html\\.twig'.*?\\)\\s*\\}\\}~s",
-            $toolbarHtml,
+            static fn (): string => $toolbarHtml,
             $template,
             1,
         ) ?? $template;
