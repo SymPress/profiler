@@ -40,6 +40,8 @@ final class ArraySanitizer
                 $redacted[$key] = $depth >= 64
                     ? '[depth limit reached]'
                     : $this->redactPayload($item, $depth + 1, $sensitive && $key !== 'cookies');
+            } elseif ($sensitive && !($key === 'has_auth_cookie' && is_bool($item) && !$credentials)) {
+                $redacted[$key] = '[redacted]';
             } elseif (is_string($item) || $item instanceof \Stringable) {
                 $redacted[$key] = $sensitive ? '[redacted]' : $this->redactString((string) $item);
             } elseif (is_object($item)) {
@@ -47,7 +49,7 @@ final class ArraySanitizer
             } elseif (is_resource($item)) {
                 $redacted[$key] = '[resource]';
             } else {
-                // Counts and booleans such as has_auth_cookie are diagnostic summaries.
+                // Preserve ordinary scalar diagnostics after credential redaction.
                 $redacted[$key] = $item;
             }
         }
