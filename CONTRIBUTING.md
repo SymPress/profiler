@@ -10,7 +10,7 @@ composer qa
 ```
 
 The package uses PHP 8.5, PHPUnit, PHPStan, PHP CS Fixer, and PHPCS with the
-Inpsyde coding standards.
+SymPress coding standards.
 
 ## Pull Requests
 
