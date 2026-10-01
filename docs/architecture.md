@@ -92,3 +92,9 @@ Small `.json.index` sidecars hold search metadata; search opens full collector
 JSON only for matching result profiles. Existing profiles without sidecars are decoded once and backfilled for subsequent
 searches. Read-only legacy stores keep a compatible full-file fallback. Sidecars
 expire with their profiles.
+
+## Stopwatch service compatibility
+
+`SymPress\Profiler\Stopwatch\ProfilerStopwatch` supplies the custom timing payload consumed by `PerformanceCollector`. It does not replace `debug.stopwatch`, whose Symfony consumers require `Symfony\Component\Stopwatch\Stopwatch`. An existing native service remains intact; without one, Twig's profiler uses its optional null stopwatch and still records Twig profile timing. Custom SymPress events continue to use their own service and payload.
+
+Run `php tests/Integration/stopwatch-twig.php /absolute/consumer/vendor/autoload.php` against a consumer with Symfony Twig Bridge and Twig installed. If its optional Stopwatch component is absent, supply a second test autoloader that provides the real component (for example this package's development vendor/autoload.php). It compiles actual service wiring and renders nested Twig templates with the native stopwatch present and absent, asserting that Twig and custom events survive. No production dependency on Twig or Stopwatch is added solely for profiling.
