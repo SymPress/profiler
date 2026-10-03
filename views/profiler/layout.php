@@ -5,10 +5,10 @@ declare(strict_types=1);
 $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
 <div class="container">
-    <?= $header_html ?>
+    <?php echo $header_html ?>
 
     <div id="summary">
-        <?= $summary_html ?>
+        <?php echo $summary_html ?>
     </div>
 
     <div id="content">
@@ -18,11 +18,11 @@ $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, 
                     <div id="sidebar-shortcuts">
                         <div class="shortcuts">
                             <?php foreach ($shortcuts as $shortcut): ?>
-                                <a class="btn btn-link" href="<?= $escape($shortcut['url']) ?>">
+                                <a class="btn btn-link" href="<?php echo $escape($shortcut['url']) ?>">
                                     <?php if (($shortcut['icon'] ?? '') !== ''): ?>
-                                        <?= $shortcut['icon'] ?>
+                                        <?php echo $shortcut['icon'] ?>
                                     <?php endif; ?>
-                                    <?= $escape($shortcut['label']) ?>
+                                    <?php echo $escape($shortcut['label']) ?>
                                 </a>
                             <?php endforeach; ?>
                         </div>
@@ -32,26 +32,26 @@ $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, 
                         <nav aria-label="Profiler menu">
                             <ul id="menu-profiler">
                                 <?php foreach ($menu_items as $item): ?>
-                                    <li class="<?= $escape($item['id']) ?><?= $item['selected'] ? ' selected' : '' ?><?= $item['enabled'] ? '' : ' disabled' ?>">
+                                    <li class="<?php echo $escape($item['id']) ?><?php echo $item['selected'] ? ' selected' : '' ?><?php echo $item['enabled'] ? '' : ' disabled' ?>">
                                         <?php if ($item['enabled']): ?>
-                                            <a href="<?= $escape($item['link']) ?>"<?= $item['selected'] ? ' aria-current="page"' : '' ?>>
+                                            <a href="<?php echo $escape($item['link']) ?>"<?php echo $item['selected'] ? ' aria-current="page"' : '' ?>>
                                                 <span class="label">
-                                                    <span class="icon"><?= $item['icon'] ?></span>
-                                                    <strong><?= $escape($item['label']) ?></strong>
+                                                    <span class="icon"><?php echo $item['icon'] ?></span>
+                                                    <strong><?php echo $escape($item['label']) ?></strong>
                                                     <?php if ($item['metric'] !== ''): ?>
                                                         <span class="count">
-                                                            <span><?= $escape($item['metric']) ?></span>
+                                                            <span><?php echo $escape($item['metric']) ?></span>
                                                         </span>
                                                     <?php endif; ?>
                                                 </span>
                                             </a>
                                         <?php else: ?>
                                             <span class="label disabled" aria-disabled="true">
-                                                <span class="icon"><?= $item['icon'] ?></span>
-                                                <strong><?= $escape($item['label']) ?></strong>
+                                                <span class="icon"><?php echo $item['icon'] ?></span>
+                                                <strong><?php echo $escape($item['label']) ?></strong>
                                                 <?php if ($item['metric'] !== ''): ?>
                                                     <span class="count">
-                                                        <span><?= $escape($item['metric']) ?></span>
+                                                        <span><?php echo $escape($item['metric']) ?></span>
                                                     </span>
                                                 <?php endif; ?>
                                             </span>
@@ -63,15 +63,15 @@ $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, 
                     <?php endif; ?>
                 </div>
 
-                <?= $settings_html ?>
+                <?php echo $settings_html ?>
             </div>
 
             <div id="collector-wrapper">
                 <div id="collector-content">
                     <script>
-<?= $base_js ?>
+<?php echo $base_js ?>
                     </script>
-                    <?= $content_html ?>
+                    <?php echo $content_html ?>
                 </div>
             </div>
         </main>

@@ -76,6 +76,7 @@ final class ProfilerUrlGenerator
             return '';
         }
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Preserve native parsing in standalone profiler contexts with a supplied home_url adapter.
         $homePath = (string) (parse_url((string) home_url('/'), PHP_URL_PATH) ?? '');
 
         if ($homePath === '' || $homePath === '/') {
@@ -91,6 +92,7 @@ final class ProfilerUrlGenerator
             return $this->basePath();
         }
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Preserve native parsing in standalone profiler contexts with a supplied home_url adapter.
         $parts = parse_url((string) home_url('/'));
 
         if (!is_array($parts)) {

@@ -159,6 +159,7 @@ final class ProfileGate
             return false;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.NonceVerification.Missing -- Presence only controls gated profiling for this request; no site state is changed.
         foreach ([$_GET, $_POST] as $input) {
             if (array_key_exists($parameter, $input)) {
                 return true;

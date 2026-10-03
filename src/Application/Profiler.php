@@ -229,6 +229,7 @@ final class Profiler
         return [
             'method'         => strtoupper($this->serverValue('REQUEST_METHOD', 'GET')),
             'uri'            => $requestUri,
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Native path-only diagnostics also run before WordPress URL helpers are available.
             'path'           => (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/'),
             'url'            => $sanitizer->sanitize($this->currentUrl()),
             'ip'             => $this->serverValue('REMOTE_ADDR'),

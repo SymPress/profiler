@@ -80,6 +80,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     {
         $duration = $this->floatValue($payload, 'duration_ms');
         $statusCode = $this->intValue($payload, 'status_code', 200);
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Stored profiles can render in standalone contexts without WordPress URL helpers.
         $path = (string) (parse_url($this->stringValue($payload, 'uri', '/'), PHP_URL_PATH) ?? '/');
         $accent = $statusCode >= 500 ? 'red' : ($statusCode >= 400 ? 'yellow' : 'cyan');
 

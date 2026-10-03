@@ -139,6 +139,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
             : '';
         $table = $table !== '' ? $table : 'wp_options';
         $results = $wpdb->get_results(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table identifier from wpdb is restricted to alphanumeric/underscore above; this query has no user-supplied values.
             "SELECT option_name, LENGTH(option_value) AS bytes, autoload FROM {$table} WHERE option_name LIKE '_transient_%' ORDER BY LENGTH(option_value) DESC LIMIT 50",
             'ARRAY_A',
         );

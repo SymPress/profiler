@@ -122,6 +122,7 @@ final class ProfilerRequestMatcher
         }
 
         $requestUri = function_exists('wp_unslash') ? wp_unslash((string) $requestUri) : (string) $requestUri;
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Native path parsing remains available before WordPress URL helpers load.
         $path = (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/');
         $path = rawurldecode($path);
         $basePath = $this->basePath();
@@ -139,6 +140,7 @@ final class ProfilerRequestMatcher
             return '';
         }
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- The profiler's standalone home_url adapter does not require WordPress URL helpers.
         $homePath = (string) (parse_url((string) home_url('/'), PHP_URL_PATH) ?? '');
 
         if ($homePath === '/' || $homePath === '') {

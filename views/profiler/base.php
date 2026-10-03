@@ -11,9 +11,9 @@ $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, 
         <meta name="robots" content="noindex,nofollow" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="view-transition" content="same-origin" />
-        <title><?= $escape($title) ?></title>
+        <title><?php echo $escape($title) ?></title>
         <style>
-<?= $profiler_css ?>
+<?php echo $profiler_css ?>
         </style>
     </head>
     <body>
@@ -33,6 +33,6 @@ $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, 
                 (navigator.appVersion.indexOf('Win') !== -1) ? 'windows' : (navigator.appVersion.indexOf('Mac') !== -1) ? 'macos' : 'linux'
             );
         </script>
-<?= $body_html ?>
+<?php echo $body_html ?>
     </body>
 </html>
