@@ -8,4 +8,7 @@ where applicable.
 
 ## Unreleased
 
+- Store profiles and search indexes with mode 0600 in a 0700 private directory; tighten legacy files before use and reject unsafe storage links or permissions.
+- Mask custom WordPress authentication/recovery cookies and PHP session cookies while preserving preference and authorization diagnostics.
+
 - Initial profiler package documentation.

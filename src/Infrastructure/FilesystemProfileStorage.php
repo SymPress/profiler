@@ -7,12 +7,15 @@ namespace SymPress\Profiler\Infrastructure;
 use SymPress\Profiler\Contract\ProfileStorageInterface;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ProfileSearchCriteria;
+use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
 final class FilesystemProfileStorage implements ProfileStorageInterface
 {
     private const int TTL_SECONDS = 172800;
+
+    private bool $storageSecured = false;
 
     public function __construct(
         private readonly string $storageDirectory,
@@ -22,8 +25,8 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
 
     public function save(ProfileRecord $profile): void
     {
-        $this->filesystem->mkdir($this->storageDirectory);
-        $this->filesystem->dumpFile(
+        $this->secureStorage(true);
+        $this->dumpPrivateFile(
             $this->profileFile($profile->token),
             json_encode(
                 $profile->jsonSerialize(),
@@ -43,7 +46,7 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
     private function writeIndex(ProfileRecord $profile): void
     {
         $request = $profile->collector('request');
-        $this->filesystem->dumpFile(
+        $this->dumpPrivateFile(
             $this->profileFile($profile->token) . '.index',
             json_encode([
                 'token'      => $profile->token,
@@ -56,6 +59,7 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
 
     public function load(string $token): ?ProfileRecord
     {
+        $this->secureStorage(false);
         $profileFile = $this->profileFile($token);
 
         if (!is_file($profileFile)) {
@@ -121,12 +125,17 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
 
     private function profileFile(string $token): string
     {
+        if (preg_match('/^[A-Za-z0-9_-]+$/D', $token) !== 1) {
+            throw new \InvalidArgumentException('Invalid profiler storage token.');
+        }
+
         return sprintf('%s/%s.json', rtrim($this->storageDirectory, '/'), $token);
     }
 
     /** @return list<ProfileRecord> */
     private function allProfiles(): array
     {
+        $this->secureStorage(false);
         if (!is_dir($this->storageDirectory)) {
             return [];
         }
@@ -163,6 +172,74 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
         );
 
         return $profiles;
+    }
+
+    private function secureStorage(bool $create): void
+    {
+        if ($this->storageSecured) {
+            return;
+        }
+
+        if (is_link($this->storageDirectory)) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception path metadata, never rendered HTML.
+            throw new IOException('Profiler storage must be a private directory, not a symbolic link.', 0, null, $this->storageDirectory);
+        }
+
+        if (!is_dir($this->storageDirectory)) {
+            if (!$create) {
+                return;
+            }
+
+            $this->filesystem->mkdir($this->storageDirectory, 0700);
+        }
+
+        $this->restrictPermissions($this->storageDirectory, 0700);
+
+        // Tighten only this store's files during an upgrade, before reading or writing data.
+        foreach (glob($this->storageDirectory . '/*.json{,.index}', GLOB_BRACE) ?: [] as $file) {
+            $this->restrictPermissions($file, 0600);
+        }
+
+        $this->storageSecured = true;
+    }
+
+    private function dumpPrivateFile(string $file, string $contents): void
+    {
+        if (file_exists($file) || is_link($file)) {
+            $this->restrictPermissions($file, 0600);
+        }
+
+        // Symfony writes atomically. Keep its temporary and final files private even with umask 0000.
+        $previousUmask = umask(0077);
+        try {
+            $this->filesystem->dumpFile($file, $contents);
+        } finally {
+            umask($previousUmask);
+        }
+
+        $this->restrictPermissions($file, 0600);
+    }
+
+    private function restrictPermissions(string $path, int $mode): void
+    {
+        if (is_link($path)) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception path metadata, never rendered HTML.
+            throw new IOException('Profiler storage must not contain symbolic links.', 0, null, $path);
+        }
+
+        clearstatcache(true, $path);
+        $permissions = fileperms($path);
+        if ($permissions !== false && ($permissions & 07777) === $mode) {
+            return;
+        }
+        // Failure closes the storage boundary; already-private read-only stores need no chmod.
+        $this->filesystem->chmod($path, $mode);
+        clearstatcache(true, $path);
+        $permissions = fileperms($path);
+        if ($permissions === false || ($permissions & 07777) !== $mode) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception path metadata, never rendered HTML.
+            throw new IOException('Profiler storage permissions could not be restricted.', 0, null, $path);
+        }
     }
 
     private function matches(ProfileRecord $profile, ProfileSearchCriteria $criteria): bool
