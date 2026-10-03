@@ -19,8 +19,19 @@ permissions:
 
 jobs:
   archive:
-    uses: sympress/workflows/.github/workflows/wordpress-archive.yml@177fa0d727b278d2103052ec77c102b4a4c492a0
+    permissions:
+      contents: read
+      actions: read
+      attestations: write
+      id-token: write
+    uses: sympress/workflows/.github/workflows/wordpress-archive.yml@cd809f3986df3ea617d2d26bdf21ab69cae19c1e
     with:
+      artifact_attestation: false
+      artifact_extra_excludes: >-
+        /tests /docs /AGENTS.md /CONTRIBUTING.md /qa-adoption.json
+        /phpcs.xml /phpcs.xml.dist /phpstan.neon /phpstan.neon.dist
+        /phpunit*.xml* /.php-cs-fixer* /.gitignore /.gitattributes
+        /composer.review*.json /composer.review*.lock
       main_file: profiler.php
       package_version: ${{ github.event.inputs.version }}
     secrets:
@@ -28,7 +39,7 @@ jobs:
 
   archive-check:
     needs: archive
-    uses: sympress/workflows/.github/workflows/wordpress-archive-check.yml@177fa0d727b278d2103052ec77c102b4a4c492a0
+    uses: sympress/workflows/.github/workflows/wordpress-archive-check.yml@cd809f3986df3ea617d2d26bdf21ab69cae19c1e
     with:
       artifact_name: ${{ needs.archive.outputs.artifact }}
     secrets:
