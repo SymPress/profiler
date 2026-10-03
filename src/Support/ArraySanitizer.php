@@ -112,6 +112,18 @@ final class ArraySanitizer
     {
         $normalizedKey = strtolower($key);
 
+        $sessionCookie = function_exists('session_name') ? session_name() : false;
+        if ($normalizedKey === 'phpsessid' || (is_string($sessionCookie) && $normalizedKey === strtolower($sessionCookie))) {
+            return true;
+        }
+
+        foreach (['AUTH_COOKIE', 'SECURE_AUTH_COOKIE', 'LOGGED_IN_COOKIE', 'USER_COOKIE', 'PASS_COOKIE', 'RECOVERY_MODE_COOKIE'] as $constant) {
+            $cookie = defined($constant) ? constant($constant) : null;
+            if (is_string($cookie) && $normalizedKey === strtolower($cookie)) {
+                return true;
+            }
+        }
+
         foreach (['password', 'pass', 'pwd', 'nonce', 'token', 'authorization', 'cookie', 'secret', 'credential', 'api_key', 'apikey', 'private_key', 'access_key', 'key', 'dsn', 'wordpress_', 'session'] as $fragment) {
             if (str_contains($normalizedKey, $fragment)) {
                 return true;

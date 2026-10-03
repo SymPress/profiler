@@ -8,6 +8,8 @@ use SymPress\Profiler\Infrastructure\FilesystemProfileStorage;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ProfileSearchCriteria;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Exception\IOException;
 
 final class FilesystemProfileStorageTest extends TestCase
 {
@@ -47,6 +49,89 @@ final class FilesystemProfileStorageTest extends TestCase
         file_put_contents($this->storageDirectory . '/indexed.json', json_encode($changed, JSON_THROW_ON_ERROR));
         self::assertSame([], $storage->search(new ProfileSearchCriteria(method: 'POST')));
         self::assertCount(1, $storage->search(new ProfileSearchCriteria(method: 'GET')));
+    }
+
+    public function testNewStorageAndReplacementsStayPrivateWithPermissiveUmask(): void
+    {
+        $previousUmask = umask(0000);
+        try {
+            $storage = new FilesystemProfileStorage($this->storageDirectory);
+            $profile = new ProfileRecord('private', '2026-10-03T10:00:00+00:00', [], []);
+            $storage->save($profile);
+            $storage->save($profile);
+            self::assertSame(0000, umask());
+            self::assertSame(0700, fileperms($this->storageDirectory) & 07777);
+            foreach (glob($this->storageDirectory . '/*') ?: [] as $file) {
+                clearstatcache(true, $file);
+                self::assertSame(0600, fileperms($file) & 07777);
+            }
+        } finally {
+            umask($previousUmask);
+        }
+    }
+
+    public function testLegacyProfileAndIndexPermissionsAreTightenedBeforeRead(): void
+    {
+        mkdir($this->storageDirectory, 0755);
+        chmod($this->storageDirectory, 0755);
+        $profile = new ProfileRecord('legacy', '2026-10-03T10:00:00+00:00', [], []);
+        foreach (['legacy.json', 'legacy.json.index'] as $name) {
+            $file = $this->storageDirectory . '/' . $name;
+            file_put_contents($file, json_encode($profile, JSON_THROW_ON_ERROR));
+            chmod($file, 0644);
+        }
+        self::assertInstanceOf(ProfileRecord::class, (new FilesystemProfileStorage($this->storageDirectory))->load('legacy'));
+        clearstatcache();
+        self::assertSame(0700, fileperms($this->storageDirectory) & 07777);
+        self::assertSame(0600, fileperms($this->storageDirectory . '/legacy.json') & 07777);
+        self::assertSame(0600, fileperms($this->storageDirectory . '/legacy.json.index') & 07777);
+    }
+
+    public function testPrivateReadOnlyLegacyStoreKeepsSearchFallback(): void
+    {
+        mkdir($this->storageDirectory, 0700);
+        $file = $this->storageDirectory . '/readonly.json';
+        file_put_contents($file, json_encode(new ProfileRecord('readonly', '2026-10-03T10:00:00+00:00', [], []), JSON_THROW_ON_ERROR));
+        chmod($file, 0600);
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->expects(self::never())->method('chmod');
+        $filesystem->method('dumpFile')->willThrowException(new IOException('Read-only store.'));
+        self::assertCount(1, (new FilesystemProfileStorage($this->storageDirectory, $filesystem))->latest());
+        self::assertFileDoesNotExist($file . '.index');
+    }
+
+    public function testLegacySymlinkIsRejectedWithoutChangingOutsideFile(): void
+    {
+        mkdir($this->storageDirectory, 0700);
+        $outside = tempnam(sys_get_temp_dir(), 'profiler-outside-');
+        self::assertIsString($outside);
+        chmod($outside, 0644);
+        symlink($outside, $this->storageDirectory . '/link.json');
+        try {
+            (new FilesystemProfileStorage($this->storageDirectory))->latest();
+            self::fail('A symbolic link must not be followed.');
+        } catch (IOException) {
+            clearstatcache(true, $outside);
+            self::assertSame(0644, fileperms($outside) & 07777);
+        } finally {
+            unlink($outside);
+        }
+    }
+
+    public function testStorageCannotContinueWhenFilesystemIgnoresChmod(): void
+    {
+        mkdir($this->storageDirectory, 0755);
+        chmod($this->storageDirectory, 0755);
+        $filesystem = $this->createMock(Filesystem::class);
+        $filesystem->expects(self::once())->method('chmod');
+        $this->expectException(IOException::class);
+        (new FilesystemProfileStorage($this->storageDirectory, $filesystem))->latest();
+    }
+
+    public function testStorageTokenCannotEscapePrivateDirectory(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new FilesystemProfileStorage($this->storageDirectory))->load('../outside');
     }
 
     public function test_it_saves_and_loads_profiles(): void

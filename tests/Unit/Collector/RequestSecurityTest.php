@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace SymPress\Profiler\Tests\Unit\Collector;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use SymPress\Kernel\WpContext;
 use SymPress\Profiler\Collector\RequestCollector;
 use SymPress\Profiler\Support\ArraySanitizer;
@@ -12,6 +14,33 @@ use SymPress\Profiler\Value\ProfileContext;
 
 final class RequestSecurityTest extends TestCase
 {
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCustomWordPressAndPhpSessionCookiesAreRedactedAtBothBoundaries(): void
+    {
+        $cookies = ['PHPSESSID' => 'phpSessionSentinel', 'preference' => 'dark'];
+        foreach (['AUTH_COOKIE', 'SECURE_AUTH_COOKIE', 'LOGGED_IN_COOKIE', 'USER_COOKIE', 'PASS_COOKIE', 'RECOVERY_MODE_COOKIE'] as $index => $constant) {
+            define($constant, 'custom_auth_' . $index);
+            $cookies[constant($constant)] = 'customSentinel' . $index;
+        }
+        session_name('custom_php_id');
+        $cookies['custom_php_id'] = 'customPhpSentinel';
+        $_COOKIE = $cookies;
+        try {
+            $sanitizer = new ArraySanitizer();
+            $collector = new RequestCollector($sanitizer, WpContext::new()->force(WpContext::FRONTOFFICE));
+            $payload = $collector->collect(new ProfileContext('cookies', microtime(true), microtime(true), 0, 0, 0, 200, null, [], [], '/_profiler/cookies'));
+            $extension = $sanitizer->redactPayload(['cookies' => $cookies, 'has_auth_cookie' => true]);
+            foreach ($cookies as $name => $value) {
+                self::assertSame($name === 'preference' ? $value : '[redacted]', $payload['cookies'][$name]);
+                self::assertSame($name === 'preference' ? $value : '[redacted]', $extension['cookies'][$name]);
+            }
+            self::assertTrue($extension['has_auth_cookie']);
+        } finally {
+            $_COOKIE = [];
+        }
+    }
+
     public function testCookiesHeadersAndNestedCredentialsAreRedactedBeforePersistence(): void
     {
         $_COOKIE = ['wordpress_logged_in_abcdef' => 'raw-auth', 'wordpress_sec_abcdef' => 'raw-sec', 'wordpress_abcdef' => 'raw-cookie', 'preference' => 'dark'];

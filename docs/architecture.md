@@ -47,7 +47,14 @@ timestamp, source, channel, context, and extra before persistence.
 ## Storage, rendering, and trust boundaries
 
 - `ProfileRecord` stores request metadata separately from collector payloads.
-- `FilesystemProfileStorage` writes JSON below the environment cache directory.
+- `FilesystemProfileStorage` writes JSON and search indexes with mode `0600` in a
+  `0700` private directory below the environment cache directory. Atomic writes
+  remain private with a permissive process umask. On first read/write it tightens
+  existing profile and index permissions; a permission failure or symbolic link
+  closes the storage boundary. Ancestor cache directories and unrelated files
+  are not changed. Already-private read-only stores retain legacy search fallback.
+  Storage tokens use the route's existing ASCII alphanumeric/underscore/hyphen
+  contract so file operations cannot escape the private directory.
 - The gate prevents collection in excluded contexts and controls profiler access;
   collectors must still minimize and sanitize sensitive data.
 - PHP views escape untrusted values through `Support/Html`. Use `HtmlString` only
@@ -73,6 +80,9 @@ collection/recorder hooks are registered only after the gate opens at
 Request server diagnostics use an explicit allowlist and never include the
 process environment. WordPress authentication cookies, authorization/set-cookie
 headers and nested credential, key and DSN fields are redacted before storage.
+Custom WordPress authentication/recovery/user/password cookie constants,
+`PHPSESSID` and the active PHP session cookie name are also masked, while ordinary
+preference cookies and the boolean authentication-cookie diagnostic are retained.
 URL userinfo is redacted by the sanitizer. Stored data remains privileged debug
 data and the cache directory must remain outside HTTP access.
 
