@@ -5,7 +5,7 @@ declare(strict_types=1);
 $escape = static fn (mixed $value): string => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
 <header id="header">
-    <h1><a href="<?= $escape($home_url) ?>"><span aria-hidden="true"><?= $profiler_icon ?></span> Symfony Profiler</a></h1>
+    <h1><a href="<?php echo $escape($home_url) ?>"><span aria-hidden="true"><?php echo $profiler_icon ?></span> Symfony Profiler</a></h1>
 
     <div class="search">
         <form method="get" action="https://symfony.com/search" target="_blank">

@@ -506,6 +506,7 @@ final class ToolbarRenderer
         }
 
         $uri = $this->stringValue($profile->collector('request'), 'uri', '/');
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Stored profiles render without requiring WordPress URL helper initialization.
         $path = (string) (parse_url($uri, PHP_URL_PATH) ?? '/');
 
         if ($path === '/' || $path === '') {

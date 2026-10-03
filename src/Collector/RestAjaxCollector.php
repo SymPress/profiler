@@ -199,6 +199,7 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
             return $this->normalizeRoute($route);
         }
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Native route-only diagnostics also operate before WordPress URL helpers load.
         $path = (string) (parse_url($this->serverValue('REQUEST_URI'), PHP_URL_PATH) ?? '');
         $prefix = function_exists('rest_get_url_prefix') ? '/' . trim(rest_get_url_prefix(), '/') . '/' : '/wp-json/';
         $position = strpos($path, $prefix);
@@ -261,6 +262,7 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
 
     private function requestValue(string $key): string
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only profiler snapshot; this presence check changes no site state.
         if (!array_key_exists($key, $_REQUEST)) {
             return '';
         }

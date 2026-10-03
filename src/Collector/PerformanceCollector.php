@@ -689,6 +689,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
             $encodedTimelineId = '""';
         }
 
+        // phpcs:ignore PluginCheck.CodeAnalysis.Heredoc.NotAllowed -- Trusted timeline script with its sole dynamic identifier encoded above as JSON_HEX_*.
         return <<<HTML
 <script>
 (function () {

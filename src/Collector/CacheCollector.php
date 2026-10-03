@@ -346,6 +346,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         $stats = [
             'path_exists'     => $path !== '' && is_dir($path),
             'path_readable'   => $path !== '' && is_readable($path),
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Inspect native cache permissions read-only; WP_Filesystem may use a different transport identity.
             'path_writable'   => $path !== '' && is_writable($path),
             'file_count'      => 0,
             'directory_count' => 0,

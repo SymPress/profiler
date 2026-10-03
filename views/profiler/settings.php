@@ -194,7 +194,7 @@ declare(strict_types=1);
 </style>
 
 <a href="#" id="open-settings">
-    <span class="icon"><?= $settings_icon ?></span>
+    <span class="icon"><?php echo $settings_icon ?></span>
     Profiler settings
 </a>
 
@@ -212,7 +212,7 @@ declare(strict_types=1);
                 <label for="settings-theme-auto">
                     <input class="config-option" type="radio" name="theme" value="auto" id="settings-theme-auto">
                     <p>
-                        <?= $settings_theme_system_icon ?>
+                        <?php echo $settings_theme_system_icon ?>
                         <span>System / OS</span>
                     </p>
                 </label>
@@ -220,7 +220,7 @@ declare(strict_types=1);
                 <label for="settings-theme-light">
                     <input class="config-option" type="radio" name="theme" value="light" id="settings-theme-light">
                     <p>
-                        <?= $settings_theme_light_icon ?>
+                        <?php echo $settings_theme_light_icon ?>
                         <span>Light</span>
                     </p>
                 </label>
@@ -228,7 +228,7 @@ declare(strict_types=1);
                 <label for="settings-theme-dark">
                     <input class="config-option" type="radio" name="theme" value="dark" id="settings-theme-dark">
                     <p>
-                        <?= $settings_theme_dark_icon ?>
+                        <?php echo $settings_theme_dark_icon ?>
                         <span>Dark</span>
                     </p>
                 </label>
@@ -240,7 +240,7 @@ declare(strict_types=1);
                 <label for="settings-width-normal">
                     <input class="config-option" type="radio" name="width" value="normal" id="settings-width-normal">
                     <p>
-                        <?= $settings_width_fixed_icon ?>
+                        <?php echo $settings_width_fixed_icon ?>
                         <span>Fixed width</span>
                     </p>
                 </label>
@@ -248,7 +248,7 @@ declare(strict_types=1);
                 <label for="settings-width-full">
                     <input class="config-option" type="radio" name="width" value="full" id="settings-width-full">
                     <p>
-                        <?= $settings_width_fitted_icon ?>
+                        <?php echo $settings_width_fitted_icon ?>
                         <span>Fit to window</span>
                     </p>
                 </label>
