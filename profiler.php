@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Profiler
  * Description: Profiler and web debug toolbar for the WordPress kernel.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Requires at least: 6.9
  * Requires PHP: 8.5
  * Author: Brian Schäffner
