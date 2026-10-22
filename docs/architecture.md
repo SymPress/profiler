@@ -48,7 +48,8 @@ timestamp, source, channel, context, and extra before persistence.
 
 - `ProfileRecord` stores request metadata separately from collector payloads.
 - `FilesystemProfileStorage` writes JSON and search indexes with mode `0600` in a
-  `0700` private directory below the environment cache directory. Atomic writes
+  `0700` private directory below the kernel cache directory
+  (`%kernel.cache_dir%/profiler`, which follows `APP_CACHE_DIR`). Atomic writes
   remain private with a permissive process umask. On first read/write it tightens
   existing profile and index permissions; a permission failure or symbolic link
   closes the storage boundary. Ancestor cache directories and unrelated files
