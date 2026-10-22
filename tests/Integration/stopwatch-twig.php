@@ -31,6 +31,7 @@ foreach ([false, true] as $nativeAvailable) {
     $container = new ContainerBuilder();
     $container->setParameter('kernel.project_dir', dirname(__DIR__, 2));
     $container->setParameter('kernel.environment', 'test');
+    $container->setParameter('kernel.cache_dir', sys_get_temp_dir() . '/sympress-profiler-integration');
     if ($nativeAvailable) {
         $container->register('debug.stopwatch', Stopwatch::class)->setPublic(true);
     }

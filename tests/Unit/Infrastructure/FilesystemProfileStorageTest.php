@@ -8,8 +8,10 @@ use SymPress\Profiler\Infrastructure\FilesystemProfileStorage;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ProfileSearchCriteria;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Exception\IOException;
+use Symfony\Component\Yaml\Yaml;
 
 final class FilesystemProfileStorageTest extends TestCase
 {
@@ -31,6 +33,20 @@ final class FilesystemProfileStorageTest extends TestCase
         }
 
         rmdir($this->storageDirectory);
+    }
+
+    public function testDefaultStorageUsesKernelCacheDirectory(): void
+    {
+        $config = Yaml::parseFile(dirname(__DIR__, 3) . '/Resources/config/services.yaml', Yaml::PARSE_CUSTOM_TAGS);
+        $parameters = new ParameterBag([
+            'kernel.project_dir' => '/project',
+            'kernel.environment' => 'local',
+            'kernel.cache_dir' => $this->storageDirectory,
+            ...$config['parameters'],
+        ]);
+        $parameters->resolve();
+
+        self::assertSame($this->storageDirectory . '/profiler', $parameters->get('profiler.storage_dir'));
     }
 
     public function testSearchUsesSmallIndexesBeforeLoadingSelectedPayloads(): void

@@ -55,7 +55,7 @@ Collection can also be controlled through the service parameters in
 
 ```yaml
 parameters:
-    profiler.storage_dir: '%kernel.project_dir%/var/cache/%kernel.environment%/profiler'
+    profiler.storage_dir: '%kernel.cache_dir%/profiler'
     profiler.collect: true
     profiler.collect_parameter: ''
     profiler.toolbar.ajax_replace: false
