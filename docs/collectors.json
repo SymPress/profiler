@@ -206,8 +206,8 @@
       "key": "template",
       "priority": 35,
       "views": {"toolbar": "always", "panel": true},
-      "sources": ["ProfileContext template", "ProfilerLifecycleRecorder", "ProfilerTemplateRecorder", "current theme"],
-      "payload_keys": ["template", "template_name", "template_dir", "render_ms", "hierarchy", "template_parts", "theme", "captured_at"],
+      "sources": ["ProfileContext template", "ProfilerLifecycleRecorder", "ProfilerTemplateRecorder", "ProfilerBlockRecorder", "current theme"],
+      "payload_keys": ["template", "template_name", "template_dir", "block_template", "render_ms", "hierarchy", "template_parts", "theme", "captured_at"],
       "sensitive_fields": ["template", "template_dir", "hierarchy", "template_parts", "theme.theme_root"]
     },
     {

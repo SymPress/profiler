@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Profiler\Collector;
 
 use SymPress\Profiler\Contract\DataCollectorInterface;
+use SymPress\Profiler\Recorder\ProfilerBlockRecorder;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
 use SymPress\Profiler\Recorder\ProfilerTemplateRecorder;
 use SymPress\Profiler\Support\Html;
@@ -17,6 +18,7 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
     public function __construct(
         private readonly ProfilerLifecycleRecorder $lifecycle,
         private readonly ProfilerTemplateRecorder $templates,
+        private readonly ProfilerBlockRecorder $blocks,
     ) {
     }
 
@@ -40,14 +42,19 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         $template = (string) ($context->template() ?? '');
         $renderStartedAt = $this->renderStartedAt();
         $theme = function_exists('wp_get_theme') ? wp_get_theme() : null;
+        // Block themes render every page through wp-includes/template-canvas.php; the template that was
+        // actually chosen is the block template WordPress resolved, e.g. "sympress//page".
+        $blockTemplate = is_string($GLOBALS['_wp_current_template_id'] ?? null) ? $GLOBALS['_wp_current_template_id'] : '';
 
         return [
             'template'       => $template,
-            'template_name'  => $template !== '' ? basename($template) : '',
+            'template_name'  => $blockTemplate !== '' ? $blockTemplate : ($template !== '' ? basename($template) : ''),
             'template_dir'   => $template !== '' ? dirname($template) : '',
-            'render_ms'      => round(max(0.0, ($context->finishedAt() - $renderStartedAt) * 1000), 2),
+            'block_template' => $blockTemplate,
+            // Requests without a template (REST, AJAX) rendered nothing.
+            'render_ms'      => $renderStartedAt === null ? 0.0 : round(max(0.0, ($context->finishedAt() - $renderStartedAt) * 1000), 2),
             'hierarchy'      => $this->templateHierarchy(),
-            'template_parts' => $this->templates->parts(),
+            'template_parts' => [...$this->templates->parts(), ...$this->blockTemplateParts()],
             'theme'          => [
                 'name'       => is_object($theme) ? (string) $theme->get('Name') : '',
                 'version'    => is_object($theme) ? (string) $theme->get('Version') : '',
@@ -142,7 +149,7 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         );
     }
 
-    private function renderStartedAt(): float
+    private function renderStartedAt(): ?float
     {
         foreach ($this->lifecycle->events() as $event) {
             if ($event['name'] === 'template_include') {
@@ -150,7 +157,52 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
             }
         }
 
-        return $this->lifecycle->requestStartedAt();
+        return null;
+    }
+
+    /**
+     * Block themes never call get_template_part(): their parts are core/template-part blocks.
+     *
+     * @return list<array{slug: string, name: string, templates: list<string>, args: array<array-key, mixed>, captured_at: float}>
+     */
+    private function blockTemplateParts(): array
+    {
+        $parts = [];
+
+        foreach ($this->blocks->blocks() as $block) {
+            if ($block['name'] !== 'core/template-part') {
+                continue;
+            }
+
+            $slug = is_string($block['attrs']['slug'] ?? null) ? $block['attrs']['slug'] : '';
+            $parts[] = [
+                'slug'        => $slug,
+                'name'        => is_string($block['attrs']['theme'] ?? null) ? $block['attrs']['theme'] : '',
+                'templates'   => $slug !== '' ? ['parts/' . $slug . '.html'] : [],
+                'args'        => $block['attrs'],
+                'captured_at' => 0.0,
+            ];
+        }
+
+        return $parts;
+    }
+
+    /** A block theme answers a hierarchy candidate such as page.php with templates/page.html. */
+    private function blockTemplateFile(string $candidate): string
+    {
+        if (!function_exists('get_stylesheet_directory') || !function_exists('get_template_directory')) {
+            return '';
+        }
+
+        $file = '/templates/' . basename($candidate, '.php') . '.html';
+
+        foreach (array_unique([get_stylesheet_directory(), get_template_directory()]) as $directory) {
+            if (is_file($directory . $file)) {
+                return $directory . $file;
+            }
+        }
+
+        return '';
     }
 
     /** @return list<array{template: string, exists: bool, path: string}> */
@@ -161,6 +213,7 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
 
         foreach ($candidates as $candidate) {
             $path = function_exists('locate_template') ? locate_template([$candidate], false, false) : '';
+            $path = $path !== '' ? $path : $this->blockTemplateFile($candidate);
             $rows[] = [
                 'template' => $candidate,
                 'exists'   => $path !== '',
