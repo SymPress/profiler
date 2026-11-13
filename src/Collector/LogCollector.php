@@ -62,6 +62,7 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
             'counts'   => $counts,
             'channels' => array_keys($channels),
             'entries'  => $entries,
+            'dropped'  => $this->errors->droppedCount(),
         ];
     }
 
