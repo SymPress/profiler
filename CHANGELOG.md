@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.1.2 — 2026-11-13
+
+- Bound disk use: keep at most `profiler.max_profiles` (default 100) newest profiles younger than `profiler.ttl` (default 48 hours) and enforce this on every save instead of a random 1-in-20 sweep. Existing stores are trimmed on the next profiled request.
+- Do not profile wp-admin heartbeat requests and `favicon.ico`; an idle admin tab no longer writes a profile every 15–60 seconds.
+- `ProfileStorageInterface::search()` and `latest()` (and therefore `Profiler::find()`) return index summaries (token, date, meta) instead of fully decoded profiles; call `load()` for collector payloads. The profile list no longer decodes every matching profile into memory.
+- Store profiles as compact JSON.
+
 ## 1.1.1 — 2026-11-13
 
 - A failing collector or an unwritable profile store no longer breaks the profiled page: the collector's panel shows the error, the other collectors are kept, and storage failures are logged.
