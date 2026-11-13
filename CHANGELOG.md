@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.6 — 2026-11-13
+
+- Inject the toolbar only into browser page navigations (`Accept` names `text/html` or `application/xhtml+xml`). Requests with `Accept: */*` or no `Accept` header (fetch, XHR, curl) are still profiled but their output is no longer buffered, so streamed responses and downloads are not held in memory.
+- `profiler.collect` is asked again before a profile is stored, so a filter added by a theme or a late hook still prevents storage. The README documents which filters must be added before `plugins_loaded`.
+
 ## 1.2.5 — 2026-11-13
 
 - Less work per profiled request: plugin lists, option and transient data, cron data, the kernel's bundle discovery and the nginx cache scan run once per request instead of once per collection pass. Cache size estimates no longer fail on closures or unserializable objects.
