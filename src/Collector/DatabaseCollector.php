@@ -104,33 +104,19 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             ['label' => 'Database Queries', 'value' => (string) $this->intValue($payload, 'count')],
             ['label' => 'Different statements', 'value' => (string) count($differentStatements)],
             ['label' => 'Query time', 'value' => sprintf('%.2f ms', $this->floatValue($payload, 'total_duration_ms'))],
-            ['label' => 'Invalid entities', 'value' => '0'],
-            ['label' => 'Managed entities', 'value' => '0'],
         ]);
         $html .= Html::tabNavigation([
             ['label' => 'Queries', 'active' => true, 'target' => '#database-queries'],
-            ['label' => 'Database Connections', 'target' => '#database-connections'],
-            ['label' => 'Entity Managers', 'target' => '#database-entity-managers'],
+            // Doctrine-only tabs: $wpdb has no data source for them, so they are disabled instead of showing zeros.
+            ['label' => 'Database Connections', 'disabled' => true],
+            ['label' => 'Entity Managers', 'disabled' => true],
             ['label' => 'Second Level Cache', 'disabled' => true],
-            ['label' => 'Managed Entities', 'target' => '#database-managed-entities'],
-            ['label' => 'Entities Mapping', 'target' => '#database-entities-mapping'],
+            ['label' => 'Managed Entities', 'disabled' => true],
+            ['label' => 'Entities Mapping', 'disabled' => true],
         ]);
         $html .= '<div id="database-queries" class="profiler-tab-target">';
-        $html .= '<p><a href="#">Group similar statements</a></p>';
         $html .= Html::table(['#', 'Time', 'Info'], $queryRows, 'queries-table');
         $html .= '</div>';
-        $html .= '<div id="database-connections" class="profiler-tab-target">'
-            . Html::emptyPanel('Database connection details are not available for this profile.')
-            . '</div>';
-        $html .= '<div id="database-entity-managers" class="profiler-tab-target">'
-            . Html::emptyPanel('No entity managers were captured during this request.')
-            . '</div>';
-        $html .= '<div id="database-managed-entities" class="profiler-tab-target">'
-            . Html::emptyPanel('No managed entities were captured during this request.')
-            . '</div>';
-        $html .= '<div id="database-entities-mapping" class="profiler-tab-target">'
-            . Html::emptyPanel('No entity mapping information was captured during this request.')
-            . '</div>';
 
         if ($this->stringValue($payload, 'last_error') !== '') {
             $html .= Html::section('Last error', Html::codeBlock($this->stringValue($payload, 'last_error')));

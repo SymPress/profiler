@@ -90,19 +90,13 @@ final class LocalizationCollector extends AbstractCollector implements DataColle
         ]);
         $html .= Html::section('Messages', Html::tabNavigation([
             ['label' => 'Defined', 'badge' => $this->intValue($payload, 'domain_count'), 'active' => true, 'target' => '#translation-defined-messages'],
-            ['label' => 'Fallback', 'badge' => 0, 'target' => '#translation-fallback-messages'],
-            ['label' => 'Missing', 'badge' => 0, 'target' => '#translation-missing-messages'],
+            ['label' => 'Fallback', 'disabled' => true],
+            ['label' => 'Missing', 'disabled' => true],
         ]));
         $html .= '<div id="translation-defined-messages" class="profiler-tab-target">';
         $html .= '<p class="help">These text domains were loaded for the profiled request.</p>';
         $html .= Html::table(['Locale', 'Domain', 'Times used', 'Message ID', 'Message Preview'], $domainRows, 'translation-table');
         $html .= '</div>';
-        $html .= '<div id="translation-fallback-messages" class="profiler-tab-target">'
-            . Html::emptyPanel('No fallback translation messages were captured during this request.')
-            . '</div>';
-        $html .= '<div id="translation-missing-messages" class="profiler-tab-target">'
-            . Html::emptyPanel('No missing translation messages were captured during this request.')
-            . '</div>';
 
         return $this->panel(
             'localization',

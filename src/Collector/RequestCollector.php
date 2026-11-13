@@ -133,8 +133,9 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             ['label' => 'Request', 'content' => $requestHtml, 'active' => true],
             ['label' => 'Response', 'content' => $responseHtml],
             ['label' => 'Cookies', 'content' => Html::section('Cookies', Html::keyValueTable($this->dumpedArray($cookies), 'Name', 'Value'))],
-            ['label' => 'Session', 'content' => Html::emptyPanel('No session data was captured.')],
-            ['label' => 'Flashes', 'content' => Html::emptyPanel('No flash messages were captured.')],
+            // WordPress has no session or flash bag; the Symfony tabs stay visible but disabled.
+            ['label' => 'Session', 'content' => '', 'disabled' => true],
+            ['label' => 'Flashes', 'content' => '', 'disabled' => true],
             ['label' => 'Server Parameters', 'content' => Html::section('Server Parameters', Html::keyValueTable($this->dumpedArray($server), 'Parameter', 'Value'))],
         ]);
 
