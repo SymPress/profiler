@@ -81,6 +81,7 @@ final class ProfilerTest extends TestCase
     public function testFailingCollectorAndStorageNeverBreakTheRequest(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['HTTP_ACCEPT'] = 'text/html';
         $healthy = $this->collector();
         $broken = new class implements DataCollectorInterface {
             public function getKey(): string
@@ -164,6 +165,23 @@ final class ProfilerTest extends TestCase
         self::assertStringContainsString('collector &lt;b&gt;exploded&lt;/b&gt;', $panels[0]->html);
         self::assertStringContainsString('panel exploded', $viewBuilder->panels(new ProfileRecord('t', '2026-11-13T10:00:00+00:00', [], []))[0]->html);
         self::assertCount(1, $viewBuilder->toolbarBlocks($profile));
+    }
+
+    public function testCollectFilterAddedAfterTheGateOpenedStillPreventsStorage(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $collector = $this->collector();
+        $storage = $this->storage();
+        $urls = new ProfilerUrlGenerator();
+        $context = WpContext::new()->force(WpContext::FRONTOFFICE);
+        $profiler = new Profiler([$collector], $this->gate($context), $storage,
+            new ProfileViewBuilder([$collector], new ToolbarRenderer(new WebProfilerAssets(), $urls)), $urls, $context);
+
+        $profiler->start();
+        add_filter('profiler.collect', static fn (): bool => false);
+        $profiler->finish();
+
+        self::assertSame(0, $storage->saveCount);
     }
 
     public function testHtmlCallbackStoresProvisionalProfileAndFinishStoresTheFinalOne(): void

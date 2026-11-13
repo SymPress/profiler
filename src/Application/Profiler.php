@@ -189,6 +189,11 @@ final class Profiler
             return null;
         }
 
+        // Ask again: a theme or plugin may add a profiler.collect filter after the gate opened at plugins_loaded.
+        if (!$this->forceEnabled && !$this->gate->shouldCollect()) {
+            return null;
+        }
+
         if ($this->finalized && $this->profile instanceof ProfileRecord) {
             return $this->profile;
         }
