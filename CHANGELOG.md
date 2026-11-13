@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.5 — 2026-11-13
+
+- Less work per profiled request: plugin lists, option and transient data, cron data, the kernel's bundle discovery and the nginx cache scan run once per request instead of once per collection pass. Cache size estimates no longer fail on closures or unserializable objects.
+- Removed leftovers: the `X-Newsroom-Audit` header and `newsroom_audit=1` query switch that disabled collection, the dead "View formatted query / Explain query" links, two unused toolbar views and an unused matcher method.
+- Packaging: `symfony/filesystem` is declared as a requirement (it was only available through the kernel), and `profiler.php` loads a local `vendor/autoload.php` only when it exists.
+
 ## 1.2.4 — 2026-11-13
 
 - Events: applied filters are counted next to fired actions (`$wp_actions` holds actions only). The listener list holds up to 1000 entries instead of 250, which ended inside `init` and never reached `wp_head` or `wp_footer`; hook lists hold 500 instead of 100. The panel says when a list is cut.
