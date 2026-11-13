@@ -192,6 +192,36 @@ final class FilesystemProfileStorageTest extends TestCase
         self::assertSame(12.4, $loaded->collectors['request']['duration_ms']);
     }
 
+    public function testRetentionKeepsOnlyTheNewestProfilesAndDropsExpiredOnes(): void
+    {
+        $storage = new FilesystemProfileStorage($this->storageDirectory, new Filesystem(), 2, 3600);
+
+        foreach (['a', 'b', 'c', 'd'] as $offset => $token) {
+            $storage->save(new ProfileRecord($token, sprintf('2026-11-13T10:00:0%d+00:00', $offset), [], []));
+            touch($this->storageDirectory . '/' . $token . '.json', time() - 40 + $offset * 10);
+        }
+
+        $storage->save(new ProfileRecord('e', '2026-11-13T10:00:09+00:00', [], []));
+        self::assertSame(['e', 'd'], array_map(static fn (ProfileRecord $profile): string => $profile->token, $storage->latest(10)));
+        self::assertCount(4, glob($this->storageDirectory . '/*') ?: []);
+
+        touch($this->storageDirectory . '/d.json', time() - 7200);
+        $storage->save(new ProfileRecord('f', '2026-11-13T10:00:10+00:00', [], []));
+        self::assertSame(['f', 'e'], array_map(static fn (ProfileRecord $profile): string => $profile->token, $storage->latest(10)));
+    }
+
+    public function testSearchResultsAreSummariesWithoutCollectorPayloads(): void
+    {
+        $storage = new FilesystemProfileStorage($this->storageDirectory);
+        $storage->save(new ProfileRecord('big', '2026-11-13T10:00:00+00:00', ['method' => 'GET'], ['request' => ['referer' => 'https://example.test/', 'post' => ['body' => 'x']], 'database' => ['queries' => [1]]]));
+
+        $summary = $storage->latest(1)[0];
+        self::assertSame('GET', $summary->meta['method']);
+        self::assertSame(['referer' => 'https://example.test/'], $summary->collector('request'));
+        self::assertSame([], $summary->collector('database'));
+        self::assertSame([1], $storage->load('big')?->collector('database')['queries']);
+    }
+
     public function test_it_returns_latest_profiles_in_reverse_chronological_order(): void
     {
         $storage = new FilesystemProfileStorage($this->storageDirectory);

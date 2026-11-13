@@ -13,13 +13,13 @@ use Symfony\Component\Filesystem\Filesystem;
 
 final class FilesystemProfileStorage implements ProfileStorageInterface
 {
-    private const int TTL_SECONDS = 172800;
-
     private bool $storageSecured = false;
 
     public function __construct(
         private readonly string $storageDirectory,
         private readonly Filesystem $filesystem = new Filesystem(),
+        private readonly int $maxProfiles = 100,
+        private readonly int $ttlSeconds = 172800,
     ) {
     }
 
@@ -28,15 +28,11 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
         $this->secureStorage(true);
         $this->dumpPrivateFile(
             $this->profileFile($profile->token),
-            $this->encode($profile->jsonSerialize(), JSON_PRETTY_PRINT),
+            $this->encode($profile->jsonSerialize()),
         );
 
         $this->writeIndex($profile);
-
-        if (random_int(1, 20) !== 1) {
-            return;
-        }
-
+        // Enforce retention on every save: a probabilistic sweep lets an idle admin tab fill the disk.
         $this->cleanup();
     }
 
@@ -55,10 +51,10 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
     }
 
     /** @param array<array-key, mixed> $data */
-    private function encode(array $data, int $flags = 0): string
+    private function encode(array $data): string
     {
         // Request data is stored verbatim and may hold invalid UTF-8, NAN or INF: substitute instead of losing the profile.
-        $json = json_encode($data, $flags | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+        $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 
         if ($json === false) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, never rendered HTML.
@@ -106,11 +102,8 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
                 continue;
             }
 
-            $profile = $this->load($summary->token);
-
-            if ($profile instanceof ProfileRecord) {
-                $profiles[] = $profile;
-            }
+            // Results are index summaries: decoding every matching payload exhausts memory on large profiles.
+            $profiles[] = $summary;
 
             if (count($profiles) >= $criteria->limit) {
                 break;
@@ -122,11 +115,20 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
 
     private function cleanup(): void
     {
-        $files = glob($this->storageDirectory . '/*.json') ?: [];
-        $cutoff = time() - self::TTL_SECONDS;
+        $modifiedAt = [];
 
-        foreach ($files as $file) {
-            if (!is_file($file) || filemtime($file) >= $cutoff) {
+        foreach (glob($this->storageDirectory . '/*.json') ?: [] as $file) {
+            $modifiedAt[$file] = (int) filemtime($file);
+        }
+
+        arsort($modifiedAt);
+        $cutoff = time() - $this->ttlSeconds;
+        $kept = 0;
+
+        foreach ($modifiedAt as $file => $time) {
+            if ($time >= $cutoff && $kept < $this->maxProfiles) {
+                $kept++;
+
                 continue;
             }
 

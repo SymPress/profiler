@@ -13,9 +13,17 @@ interface ProfileStorageInterface
 
     public function load(string $token): ?ProfileRecord;
 
-    /** @return list<ProfileRecord> */
+    /**
+     * Newest first. Records are summaries (token, date, meta); use load() for collector payloads.
+     *
+     * @return list<ProfileRecord>
+     */
     public function latest(int $limit = 20): array;
 
-    /** @return list<ProfileRecord> */
+    /**
+     * Newest first. Records are summaries (token, date, meta); use load() for collector payloads.
+     *
+     * @return list<ProfileRecord>
+     */
     public function search(ProfileSearchCriteria $criteria): array;
 }
