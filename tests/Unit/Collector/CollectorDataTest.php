@@ -5,10 +5,18 @@ declare(strict_types=1);
 namespace SymPress\Profiler\Tests\Unit\Collector;
 
 use PHPUnit\Framework\TestCase;
+use SymPress\Kernel\EnvConfig;
+use SymPress\Kernel\Location\Locations;
+use SymPress\Kernel\SiteConfig;
+use SymPress\Kernel\WpContext;
+use SymPress\Profiler\Application\ProfileGate;
+use SymPress\Profiler\Application\ProfilerRequestMatcher;
 use SymPress\Profiler\Collector\CacheCollector;
 use SymPress\Profiler\Collector\CronCollector;
+use SymPress\Profiler\Collector\DatabaseCollector;
 use SymPress\Profiler\Collector\OptionsCollector;
 use SymPress\Profiler\Collector\RestAjaxCollector;
+use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
 use SymPress\Profiler\Value\ProfileContext;
 
 final class CollectorDataTest extends TestCase
@@ -86,6 +94,64 @@ final class CollectorDataTest extends TestCase
         self::assertSame('array', $rows['rewrite']['type']);
         self::assertSame('SymPress', $rows['blogname']['value']);
         self::assertSame(serialize(new \stdClass()), $rows['widget']['value']);
+    }
+
+    public function testDatabaseKeepsExecutionOrderRealDuplicatesAndSkipsProfilerQueries(): void
+    {
+        $option = static fn (string $name): string => "SELECT option_value FROM wp_options WHERE option_name = '" . $name . "' LIMIT 1";
+        $GLOBALS['wpdb'] = (object) [
+            'num_queries' => 5,
+            'last_error' => '',
+            'queries' => [
+                [$option('a'), 0.001, 'get_option', 1.0],
+                [$option('b'), 0.005, 'get_option', 2.0],
+                [$option('a'), 0.002, 'get_option', 3.0],
+                ['SELECT option_name FROM wp_options', 0.5, "do_action('shutdown'), SymPress\\Profiler\\Collector\\OptionsCollector->transients", 4.0],
+                ['SELECT 1', 0.003, 'wp', 5.0],
+            ],
+        ];
+
+        try {
+            $payload = (new DatabaseCollector())->collect($this->context());
+        } finally {
+            unset($GLOBALS['wpdb']);
+        }
+
+        self::assertSame(4, $payload['count']);
+        self::assertSame(11.0, $payload['total_duration_ms']);
+        self::assertSame([1.0, 5.0, 2.0, 3.0], array_column($payload['queries'], 'duration_ms'));
+        self::assertSame(5.0, $payload['slow_queries'][0]['duration_ms']);
+        self::assertCount(1, $payload['duplicate_queries']);
+        self::assertSame(2, $payload['duplicate_queries'][0]['count']);
+        self::assertFalse($payload['truncated']);
+    }
+
+    public function testTimelineKeepsTheFirstMarkOfEachHook(): void
+    {
+        $recorder = new ProfilerLifecycleRecorder($this->gate());
+
+        foreach (['plugins_loaded', 'parse_query', 'parse_query', 'wp', 'parse_query'] as $index => $hook) {
+            $GLOBALS['profiler_test_current_filter'] = $hook;
+            $index === 0 ? $recorder->bootstrap() : $recorder->mark();
+        }
+
+        unset($GLOBALS['profiler_test_current_filter']);
+
+        self::assertSame(['plugins_loaded', 'parse_query', 'wp'], array_column($recorder->events(), 'name'));
+    }
+
+    private function gate(): ProfileGate
+    {
+        $config = $this->createStub(SiteConfig::class);
+        $config->method('env')->willReturn(EnvConfig::LOCAL);
+        $config->method('envIs')->willReturnCallback(static fn (string $environment): bool => $environment === EnvConfig::LOCAL);
+        $config->method('hosting')->willReturn(SiteConfig::HOSTING_OTHER);
+        $config->method('hostingIs')->willReturn(false);
+        $config->method('locations')->willReturn($this->createStub(Locations::class));
+        $config->method('get')->willReturn(null);
+        $config->method('jsonSerialize')->willReturn([]);
+
+        return new ProfileGate($config, WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
     }
 
     private function context(): ProfileContext

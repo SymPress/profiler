@@ -234,3 +234,10 @@ if (!function_exists('maybe_unserialize')) {
         return is_string($value) && preg_match('/^[aOs]:\d+:/', $value) === 1 ? unserialize($value) : $value;
     }
 }
+
+if (!function_exists('current_filter')) {
+    function current_filter(): string
+    {
+        return $GLOBALS['profiler_test_current_filter'] ?? '';
+    }
+}
