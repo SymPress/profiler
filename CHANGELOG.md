@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.3 — 2026-11-13
+
+- Database: queries are listed in execution order (they were sorted by duration, so `#` was a rank). "Duplicate queries" are identical statements; grouping by query shape reported 22 lookups of 21 different options as 22 duplicates. Totals, duplicates and callers cover all queries, not only the first 150 stored. The profiler's own collection queries are excluded from the list and the count.
+- Performance: the timeline keeps the first mark of each hook. `parse_query` fires for every `WP_Query`, which split template rendering into several rows named `parse_query` (85 ms and 46 ms on the test page).
+
 ## 1.2.2 — 2026-11-13
 
 - Blocks: start and finish of a block are now paired by identity. Blocks such as `core/navigation` render their children directly (`render_block` without `render_block_data`), which shifted every following name, duration, depth and output size: a header template part showed 306 bytes and 6.8 ms instead of 25.5 KiB and 21.6 ms. Directly rendered children are listed as untimed children of their parent.
