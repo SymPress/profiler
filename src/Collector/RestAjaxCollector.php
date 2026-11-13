@@ -275,9 +275,8 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         }
 
         $string = (string) $value;
-        $unslashed = function_exists('wp_unslash') ? wp_unslash($string) : $string;
 
-        return function_exists('sanitize_text_field') ? sanitize_text_field($unslashed) : $unslashed;
+        return function_exists('wp_unslash') ? wp_unslash($string) : $string;
     }
 
     private function serverValue(string $key, string $default = ''): string

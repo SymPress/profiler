@@ -222,18 +222,16 @@ final class Profiler
     /** @return array<string, mixed> */
     private function meta(ProfileContext $context): array
     {
-        $sanitizer = new ArraySanitizer();
-        $sanitizedUri = $sanitizer->sanitize($this->serverValue('REQUEST_URI', '/'));
-        $requestUri = is_string($sanitizedUri) ? $sanitizedUri : '/';
+        $requestUri = $this->serverValue('REQUEST_URI', '/');
 
         return [
             'method'         => strtoupper($this->serverValue('REQUEST_METHOD', 'GET')),
             'uri'            => $requestUri,
             // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Native path-only diagnostics also run before WordPress URL helpers are available.
             'path'           => (string) (parse_url($requestUri, PHP_URL_PATH) ?? '/'),
-            'url'            => $sanitizer->sanitize($this->currentUrl()),
+            'url'            => $this->currentUrl(),
             'ip'             => $this->serverValue('REMOTE_ADDR'),
-            'referer'        => $sanitizer->sanitize($this->serverValue('HTTP_REFERER')),
+            'referer'        => $this->serverValue('HTTP_REFERER'),
             'content_type'   => $this->serverValue('CONTENT_TYPE'),
             'status_code'    => $context->statusCode(),
             'duration_ms'    => $context->durationMs(),
@@ -466,7 +464,7 @@ final class Profiler
             return $default;
         }
 
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- sanitized centrally below.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- raw value is intentional: the profiler shows request data verbatim and views escape output.
         $value = $_SERVER[$key];
 
         if (!is_scalar($value) && !$value instanceof \Stringable) {
@@ -474,11 +472,8 @@ final class Profiler
         }
 
         $string = (string) $value;
-        $unslashed = function_exists('wp_unslash') ? wp_unslash($string) : $string;
 
-        return function_exists('sanitize_text_field')
-            ? sanitize_text_field($unslashed)
-            : $unslashed;
+        return function_exists('wp_unslash') ? wp_unslash($string) : $string;
     }
 
     private function requestStartedAt(): float
