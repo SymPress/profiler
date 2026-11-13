@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.8 — 2026-11-13
+
+- Logs: errors raised while plugins load are recorded. In environments that allow profiling, recording starts at `muplugins_loaded` and the entries are dropped if the gate stays closed for the request; the last error from before (for example a kernel boot deprecation) is kept as well. Previously recording started at `plugins_loaded` priority 35.
+- Logs: deprecations triggered with `@trigger_error()` are recorded again, as in Symfony; other silenced errors are still skipped. Log times carry milliseconds.
+- The error recorder removes its handler only when it is still the active one, so a handler another plugin installed later is not removed.
+
 ## 1.2.7 — 2026-11-13
 
 - Profile and request timestamps carry milliseconds, so profiles of the same second sort in request order and `/_profiler/latest` opens the newest one. Older profiles without milliseconds keep working.
