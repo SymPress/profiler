@@ -146,19 +146,13 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         ]);
         $html .= Html::tabNavigation([
             ['label' => 'Called Listeners', 'badge' => count($listenerRows), 'active' => true, 'target' => '#hooks-called-listeners'],
-            ['label' => 'Not Called Listeners', 'badge' => 0, 'target' => '#hooks-not-called-listeners'],
-            ['label' => 'Orphaned Events', 'badge' => 0, 'target' => '#hooks-orphaned-events'],
+            ['label' => 'Not Called Listeners', 'disabled' => true],
+            ['label' => 'Orphaned Events', 'disabled' => true],
         ]);
         $html .= '<div id="hooks-called-listeners" class="profiler-tab-target">';
         $html .= Html::section('Listener Details', Html::table(['Hook', 'Priority', 'Callback', 'Origin', 'File'], $listenerRows));
         $html .= Html::section('Fired Hook Summary', Html::table(['Priority', 'Listener'], $rows));
         $html .= '</div>';
-        $html .= '<div id="hooks-not-called-listeners" class="profiler-tab-target">'
-            . Html::emptyPanel('No not called listeners were captured during this request.')
-            . '</div>';
-        $html .= '<div id="hooks-orphaned-events" class="profiler-tab-target">'
-            . Html::emptyPanel('No orphaned events were captured during this request.')
-            . '</div>';
         $html .= Html::section('Hook Order', Html::codeBlock($payload['fired_order'] ?? []));
         $html .= Html::section('Current Filter Stack', Html::codeBlock($this->currentStack($payload)));
 

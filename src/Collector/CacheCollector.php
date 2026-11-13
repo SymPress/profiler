@@ -90,7 +90,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             $poolTabs[] = ['label' => 'Nginx Cache', 'target' => '#cache-nginx-pool'];
         }
 
-        $poolTabs[] = ['label' => 'Pools without calls', 'badge' => 0, 'disabled' => true];
+        $poolTabs[] = ['label' => 'Pools without calls', 'disabled' => true];
 
         $html = '<h2>Cache</h2>';
         $html .= Html::metricTiles([
