@@ -78,19 +78,19 @@ boundary. The route hook remains registered to return 403 for denied requests;
 collection/recorder hooks are registered only after the gate opens at
 `plugins_loaded`, after WordPress pluggables become available.
 
-Request server diagnostics use an explicit allowlist and never include the
-process environment. Everything else is stored and shown verbatim: cookies
-(including WordPress authentication and PHP session cookies),
-authorization/set-cookie headers, request parameters, URL userinfo and query
-strings, and credential-like fields in any collector payload are not redacted.
-Profiles are privileged debug data for development environments; the cache
-directory must remain outside HTTP access.
+Request data is stored and shown verbatim: the full `$_SERVER` array (including
+environment variables), cookies (including WordPress authentication and PHP
+session cookies), request and response headers, GET/POST/file parameters, URL
+userinfo and query strings, and credential-like fields in any collector payload
+are not redacted, truncated or passed through `sanitize_text_field()`; only
+WordPress' magic-quote slashes are removed. Profiles are privileged debug data
+for development environments; the cache directory must remain outside HTTP
+access.
 
 Every collector, including extension collectors, is normalized before storage
 and rendering: objects become `[object Class]` (or their string value when
 `Stringable`), resources become `[resource]` and malformed nesting beyond 64
-levels is closed with a placeholder. Diagnostic arrays and long messages are
-retained without the request input's 50-item/500-character truncation.
+levels is closed with a placeholder.
 
 HTML insertion uses callback replacements in both the output buffer and toolbar
 template, preserving literal dollar sequences. The first collection finalizes
