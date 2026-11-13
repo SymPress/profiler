@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.7 — 2026-11-13
+
+- Profile and request timestamps carry milliseconds, so profiles of the same second sort in request order and `/_profiler/latest` opens the newest one. Older profiles without milliseconds keep working.
+
 ## 1.2.6 — 2026-11-13
 
 - Inject the toolbar only into browser page navigations (`Accept` names `text/html` or `application/xhtml+xml`). Requests with `Accept: */*` or no `Accept` header (fetch, XHR, curl) are still profiled but their output is no longer buffered, so streamed responses and downloads are not held in memory.
