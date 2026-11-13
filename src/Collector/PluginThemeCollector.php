@@ -12,6 +12,9 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class PluginThemeCollector extends AbstractCollector implements DataCollectorInterface
 {
+    /** @var array<string, mixed>|null Site state: identical in the provisional and the final collection pass. */
+    private ?array $payload = null;
+
     public function getKey(): string
     {
         return 'plugins';
@@ -33,7 +36,7 @@ final class PluginThemeCollector extends AbstractCollector implements DataCollec
 
         $this->loadPluginApi();
 
-        return [
+        return $this->payload ??= [
             'active_plugins'  => $this->activePlugins(),
             'network_plugins' => $this->networkPlugins(),
             'plugins'         => $this->plugins(),

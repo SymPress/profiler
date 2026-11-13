@@ -86,9 +86,9 @@ final class CollectorCatalogTest extends TestCase
     private function payloadKeys(string $class): array
     {
         $source = $this->methodSource(new \ReflectionMethod($class, 'collect'));
-        $returnOffset = strpos($source, "\n        return [");
-        self::assertNotFalse($returnOffset);
-        preg_match_all("/^ {12}'([^']+)'\\s*=>/m", substr($source, $returnOffset), $matches);
+        // Collectors of site state memoize their payload: "return $this->payload ??= [".
+        self::assertSame(1, preg_match('/\n {8}return (?:\$this->payload \?\?= )?\[/', $source, $return, PREG_OFFSET_CAPTURE));
+        preg_match_all("/^ {12}'([^']+)'\\s*=>/m", substr($source, $return[0][1]), $matches);
 
         return array_values($matches[1]);
     }

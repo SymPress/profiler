@@ -12,6 +12,9 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class CronCollector extends AbstractCollector implements DataCollectorInterface
 {
+    /** @var array<string, mixed>|null Site state: identical in the provisional and the final collection pass. */
+    private ?array $payload = null;
+
     public function getKey(): string
     {
         return 'cron';
@@ -35,7 +38,7 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
         $due = array_filter($events, static fn (array $event): bool => $event['timestamp'] <= time());
         $missed = array_filter($events, static fn (array $event): bool => $event['timestamp'] < time() - 300);
 
-        return [
+        return $this->payload ??= [
             'events'       => array_slice($events, 0, 150),
             'event_count'  => count($events),
             'due_count'    => count($due),
