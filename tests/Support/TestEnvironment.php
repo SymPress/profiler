@@ -248,3 +248,16 @@ if (!function_exists('wp_script_modules')) {
         return $GLOBALS['profiler_test_script_modules'] ?? null;
     }
 }
+
+if (!class_exists('NOOP_Translations')) {
+    class NOOP_Translations
+    {
+    }
+}
+
+if (!function_exists('get_user_locale')) {
+    function get_user_locale(): string
+    {
+        return 'de_DE';
+    }
+}

@@ -78,17 +78,6 @@
     overflow-wrap: anywhere;
 }
 
-#collector-content .translation-table th:nth-child(1),
-#collector-content .translation-table td:nth-child(1) {
-    white-space: nowrap;
-    width: 70px;
-}
-
-#collector-content .translation-table th:nth-child(3),
-#collector-content .translation-table td:nth-child(3) {
-    width: 95px;
-}
-
 #collector-content .profiler-sql {
     font-family: var(--font-family-monospace);
     font-size: var(--font-size-monospace);
