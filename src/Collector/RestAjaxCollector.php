@@ -102,7 +102,9 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
         ], 'Name', 'Value');
         $html .= '</div>';
         $html .= '<div id="rest-ajax-routes" class="profiler-tab-target">'
-            . Html::table(['Route', 'Methods', 'Namespace', 'Matched'], $routeRows)
+            . ($routeRows === []
+                ? Html::emptyPanel('Routes are listed for REST requests only: WordPress does not build its REST server on other requests.')
+                : Html::table(['Route', 'Methods', 'Namespace', 'Matched'], $routeRows))
             . '</div>';
 
         return $this->panel(
@@ -117,13 +119,19 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
     /** @return list<array{route: string, namespace: string, methods: list<string>, matched: bool}> */
     private function registeredRestRoutes(string $currentRoute): array
     {
-        if (!function_exists('rest_get_server')) {
+        // Only read a server WordPress already built. rest_get_server() would fire rest_api_init for every
+        // plugin on page and AJAX requests and make the kernel report the request as REST.
+        $server = $GLOBALS['wp_rest_server'] ?? null;
+
+        if (!is_object($server) || !method_exists($server, 'get_routes')) {
             return [];
         }
 
-        $server = rest_get_server();
-
         $routes = $server->get_routes();
+
+        if (!is_array($routes)) {
+            return [];
+        }
 
         $rows = [];
 
@@ -151,7 +159,7 @@ final class RestAjaxCollector extends AbstractCollector implements DataCollector
 
         usort($rows, static fn (array $left, array $right): int => $right['matched'] <=> $left['matched'] ?: $left['route'] <=> $right['route']);
 
-        return array_slice($rows, 0, 120);
+        return $rows;
     }
 
     /**
