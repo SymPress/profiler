@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.2 — 2026-11-13
+
+- Internal: `ProfilerEndpointController::response()` builds the response for `/_profiler` and `/_wdt` routes without output or `exit`; `handle()` sends it. Every route is now covered by tests (access denial, toolbar, styles, font, profile, search, missing profile, latest redirect). No behavior change.
+
 ## 1.3.1 — 2026-11-13
 
 - Translation: text domains WordPress only looked up (no translation file for the locale) are no longer reported as loaded; each domain shows its status, and the toolbar counts loaded domains. The fake "Times used", "Message ID" and "Message Preview" columns and the always-empty fallback locale are replaced by the user locale. Payload keys `domains` and `user_locale` replace `loaded_domains` and `fallback_locale`.
