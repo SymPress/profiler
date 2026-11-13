@@ -44,6 +44,12 @@ final class ProfilerLifecycleRecorder
             $name = 'runtime';
         }
 
+        // A timeline row lasts until the next mark. parse_query fires for every WP_Query, so repeated
+        // marks split template rendering into rows named parse_query: keep the first of each hook.
+        if (in_array($name, array_column($this->events, 'name'), true)) {
+            return;
+        }
+
         $this->events[] = [
             'name'       => $name,
             'started_at' => microtime(true),
