@@ -28,10 +28,7 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
         $this->secureStorage(true);
         $this->dumpPrivateFile(
             $this->profileFile($profile->token),
-            json_encode(
-                $profile->jsonSerialize(),
-                JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
-            ),
+            $this->encode($profile->jsonSerialize(), JSON_PRETTY_PRINT),
         );
 
         $this->writeIndex($profile);
@@ -48,13 +45,27 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
         $request = $profile->collector('request');
         $this->dumpPrivateFile(
             $this->profileFile($profile->token) . '.index',
-            json_encode([
+            $this->encode([
                 'token'      => $profile->token,
                 'created_at' => $profile->createdAt,
                 'meta'       => $profile->meta,
                 'collectors' => ['request' => array_intersect_key($request, array_flip(['referer', 'user_agent']))],
-            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+            ]),
         );
+    }
+
+    /** @param array<array-key, mixed> $data */
+    private function encode(array $data, int $flags = 0): string
+    {
+        // Request data is stored verbatim and may hold invalid UTF-8, NAN or INF: substitute instead of losing the profile.
+        $json = json_encode($data, $flags | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+
+        if ($json === false) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exception message, never rendered HTML.
+            throw new \JsonException(json_last_error_msg());
+        }
+
+        return $json;
     }
 
     public function load(string $token): ?ProfileRecord
@@ -196,8 +207,11 @@ final class FilesystemProfileStorage implements ProfileStorageInterface
         $this->restrictPermissions($this->storageDirectory, 0700);
 
         // Tighten only this store's files during an upgrade, before reading or writing data.
-        foreach (glob($this->storageDirectory . '/*.json{,.index}', GLOB_BRACE) ?: [] as $file) {
-            $this->restrictPermissions($file, 0600);
+        // GLOB_BRACE does not exist on musl (Alpine), so match profiles and indexes separately.
+        foreach (['/*.json', '/*.json.index'] as $pattern) {
+            foreach (glob($this->storageDirectory . $pattern) ?: [] as $file) {
+                $this->restrictPermissions($file, 0600);
+            }
         }
 
         $this->storageSecured = true;
