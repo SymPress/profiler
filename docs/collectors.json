@@ -226,7 +226,7 @@
       "priority": 33,
       "views": {"toolbar": "always", "panel": true},
       "sources": ["global wp_scripts", "global wp_styles"],
-      "payload_keys": ["scripts", "styles", "missing_dependencies", "duplicate_sources"],
+      "payload_keys": ["scripts", "styles", "script_modules", "missing_dependencies", "duplicate_sources"],
       "sensitive_fields": ["scripts", "styles"]
     },
     {

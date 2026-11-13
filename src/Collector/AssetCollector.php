@@ -37,6 +37,7 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
         return [
             'scripts'              => $scripts,
             'styles'               => $styles,
+            'script_modules'       => $this->scriptModules(),
             'missing_dependencies' => [
                 ...$this->missingDependencies($scripts, 'script'),
                 ...$this->missingDependencies($styles, 'style'),
@@ -90,13 +91,33 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
             ['label' => 'Missing deps', 'value' => (string) count($missingRows)],
             ['label' => 'Duplicate sources', 'value' => (string) count($duplicateRows)],
         ]);
+        $moduleRows = [];
+
+        foreach (is_array($payload['script_modules'] ?? null) ? $payload['script_modules'] : [] as $module) {
+            if (!is_array($module)) {
+                continue;
+            }
+
+            $moduleRows[] = [
+                $this->stringValue($module, 'id'),
+                $this->stringValue($module, 'src', 'n/a'),
+                $this->stringValue($module, 'version', 'n/a'),
+                implode(', ', $this->stringList($module['dependencies'] ?? [])) ?: 'none',
+                (bool) ($module['enqueued'] ?? false) ? 'enqueued' : 'dependency',
+            ];
+        }
+
         $html .= Html::tabNavigation([
             ['label' => 'Scripts', 'badge' => count($scriptRows), 'active' => true, 'target' => '#assets-scripts'],
+            ['label' => 'Script modules', 'badge' => count($moduleRows), 'target' => '#assets-modules'],
             ['label' => 'Styles', 'badge' => count($styleRows), 'target' => '#assets-styles'],
             ['label' => 'Dependency issues', 'badge' => count($missingRows) + count($duplicateRows), 'target' => '#assets-issues'],
         ]);
         $html .= '<div id="assets-scripts" class="profiler-tab-target">'
             . Html::table(['Handle', 'Source', 'Version', 'Dependencies', 'State', 'Group'], $scriptRows)
+            . '</div>';
+        $html .= '<div id="assets-modules" class="profiler-tab-target">'
+            . Html::table(['Module', 'Source', 'Version', 'Dependencies', 'State'], $moduleRows)
             . '</div>';
         $html .= '<div id="assets-styles" class="profiler-tab-target">'
             . Html::table(['Handle', 'Source', 'Version', 'Dependencies', 'State', 'Group'], $styleRows)
@@ -113,6 +134,50 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
             $html,
             sprintf('%d', count($scriptRows) + count($styleRows)),
         );
+    }
+
+    /**
+     * Enqueued script modules and everything they import. WordPress exposes no list of registered modules,
+     * only the queue (6.9) and a lookup by id (7.0); older versions show none.
+     *
+     * @return list<array{id: string, src: string, version: string, dependencies: list<string>, enqueued: bool}>
+     */
+    private function scriptModules(): array
+    {
+        $modules = function_exists('wp_script_modules') ? wp_script_modules() : null;
+
+        // @phpstan-ignore function.alreadyNarrowedType, function.alreadyNarrowedType (get_queue() is 6.9, get_registered() 7.0; the plugin supports 6.9.)
+        if (!is_object($modules) || !method_exists($modules, 'get_queue') || !method_exists($modules, 'get_registered')) {
+            return [];
+        }
+
+        $queue = $this->stringList($modules->get_queue());
+        $pending = $queue;
+        $rows = [];
+
+        while ($pending !== []) {
+            $id = array_shift($pending);
+
+            if (isset($rows[$id])) {
+                continue;
+            }
+
+            $module = $modules->get_registered($id);
+            $dependencies = array_column($module['dependencies'] ?? [], 'id');
+
+            $version = $module['version'] ?? null;
+            $rows[$id] = [
+                'id'           => $id,
+                'src'          => is_string($module['src'] ?? null) ? $module['src'] : '',
+                // false means "the WordPress version", null means none: the same rule core applies to the URL.
+                'version'      => is_string($version) ? $version : ($version === false ? (string) get_bloginfo('version') : ''),
+                'dependencies' => $dependencies,
+                'enqueued'     => in_array($id, $queue, true),
+            ];
+            $pending = [...$pending, ...$dependencies];
+        }
+
+        return array_values($rows);
     }
 
     /**

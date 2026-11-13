@@ -241,3 +241,10 @@ if (!function_exists('current_filter')) {
         return $GLOBALS['profiler_test_current_filter'] ?? '';
     }
 }
+
+if (!function_exists('wp_script_modules')) {
+    function wp_script_modules(): ?object
+    {
+        return $GLOBALS['profiler_test_script_modules'] ?? null;
+    }
+}
