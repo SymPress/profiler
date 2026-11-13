@@ -50,6 +50,16 @@ cataloged in [`docs/collectors.json`](docs/collectors.json).
 add_filter('profiler.collect', static fn (bool $collect): bool => $collect);
 ```
 
+The gate opens at `plugins_loaded` priority −1000, before plugins and themes run
+their own `plugins_loaded` callbacks. Add `profiler.enable_outside_development`
+and `profiler.collect_parameter` in a MU plugin or at a plugin's file scope.
+`profiler.collect` is asked again before a profile is stored, so returning
+`false` from a theme or a later hook still prevents storage for that request.
+
+The toolbar is injected only into browser page navigations: `GET` requests whose
+`Accept` header names `text/html` or `application/xhtml+xml`. Requests sent with
+`Accept: */*` (fetch, XHR, curl) are profiled without buffering their output.
+
 Collection can also be controlled through the service parameters in
 `Resources/config/services.yaml`:
 
