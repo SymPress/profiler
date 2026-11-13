@@ -13,34 +13,34 @@ $queryArgs = $criteria->toQueryArgs();
     </div>
 <?php endif; ?>
 
-<section style="margin: 1.5rem 0;">
-    <form method="get" action="<?php echo $escape($search_url) ?>" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;">
+<section>
+    <form method="get" action="<?php echo $escape($search_url) ?>" class="profiler-search-form">
         <label>
-            <span class="visually-hidden">Free text</span>
-            <input type="search" name="q" placeholder="Search text" value="<?php echo $escape($criteria->text) ?>">
+            <span class="profiler-search-label">Free text</span>
+            <input type="search" name="q" placeholder="any field" value="<?php echo $escape($criteria->text) ?>">
         </label>
         <label>
-            <span class="visually-hidden">Token</span>
-            <input type="text" name="token" placeholder="Token" value="<?php echo $escape($criteria->token) ?>">
+            <span class="profiler-search-label">Token</span>
+            <input type="text" name="token" value="<?php echo $escape($criteria->token) ?>">
         </label>
         <label>
-            <span class="visually-hidden">Method</span>
-            <input type="text" name="method" placeholder="Method" value="<?php echo $escape($criteria->method) ?>">
+            <span class="profiler-search-label">Method</span>
+            <input type="text" name="method" placeholder="GET" value="<?php echo $escape($criteria->method) ?>">
         </label>
         <label>
-            <span class="visually-hidden">URL</span>
-            <input type="text" name="url" placeholder="URL contains" value="<?php echo $escape($criteria->url) ?>">
+            <span class="profiler-search-label">URL</span>
+            <input type="text" name="url" placeholder="contains, !excludes" value="<?php echo $escape($criteria->url) ?>">
         </label>
         <label>
-            <span class="visually-hidden">IP</span>
-            <input type="text" name="ip" placeholder="IP address" value="<?php echo $escape($criteria->ip) ?>">
+            <span class="profiler-search-label">IP</span>
+            <input type="text" name="ip" value="<?php echo $escape($criteria->ip) ?>">
         </label>
         <label>
-            <span class="visually-hidden">Status</span>
-            <input type="number" name="status" placeholder="Status code" value="<?php echo $escape($criteria->statusCode ?? '') ?>">
+            <span class="profiler-search-label">Status</span>
+            <input type="number" name="status" placeholder="200" value="<?php echo $escape($criteria->statusCode ?? '') ?>">
         </label>
         <label>
-            <span class="visually-hidden">Context</span>
+            <span class="profiler-search-label">Context</span>
             <select name="context">
                 <option value="">Any context</option>
                 <?php foreach ($context_options as $contextOption): ?>
@@ -49,18 +49,18 @@ $queryArgs = $criteria->toQueryArgs();
             </select>
         </label>
         <label>
-            <span class="visually-hidden">From</span>
-            <input type="text" name="start" placeholder="From date/time" value="<?php echo $escape($criteria->start) ?>">
+            <span class="profiler-search-label">From</span>
+            <input type="text" name="start" placeholder="2026-01-31 12:00" value="<?php echo $escape($criteria->start) ?>">
         </label>
         <label>
-            <span class="visually-hidden">Until</span>
-            <input type="text" name="end" placeholder="Until date/time" value="<?php echo $escape($criteria->end) ?>">
+            <span class="profiler-search-label">Until</span>
+            <input type="text" name="end" placeholder="2026-01-31 13:00" value="<?php echo $escape($criteria->end) ?>">
         </label>
         <label>
-            <span class="visually-hidden">Limit</span>
-            <input type="number" min="1" max="200" name="limit" placeholder="Limit" value="<?php echo $escape($criteria->limit) ?>">
+            <span class="profiler-search-label">Limit</span>
+            <input type="number" min="1" max="200" name="limit" value="<?php echo $escape($criteria->limit) ?>">
         </label>
-        <div style="display:flex;gap:.75rem;align-items:center;">
+        <div class="profiler-search-actions">
             <button type="submit" class="btn"><?php echo $search_icon ?> Search</button>
             <a class="btn btn-link" href="<?php echo $escape($last_url) ?>">Last 10</a>
             <a class="btn btn-link" href="<?php echo $escape($latest_url) ?>">Latest</a>
