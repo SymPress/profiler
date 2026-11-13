@@ -115,7 +115,23 @@ if (!function_exists('wp_timezone_string')) {
 if (!function_exists('is_user_logged_in')) {
     function is_user_logged_in(): bool
     {
+        $GLOBALS['profiler_test_user_lookups'] = ($GLOBALS['profiler_test_user_lookups'] ?? 0) + 1;
+
         return $GLOBALS['profiler_test_logged_in'] ?? true;
+    }
+}
+
+if (!function_exists('is_multisite')) {
+    function is_multisite(): bool
+    {
+        return $GLOBALS['profiler_test_multisite'] ?? false;
+    }
+}
+
+if (!function_exists('is_super_admin')) {
+    function is_super_admin(): bool
+    {
+        return $GLOBALS['profiler_test_super_admin'] ?? false;
     }
 }
 
