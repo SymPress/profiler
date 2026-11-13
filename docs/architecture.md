@@ -57,7 +57,7 @@ timestamp, source, channel, context, and extra before persistence.
   Storage tokens use the route's existing ASCII alphanumeric/underscore/hyphen
   contract so file operations cannot escape the private directory.
 - The gate prevents collection in excluded contexts and controls profiler access;
-  collectors must still minimize and sanitize sensitive data.
+  it is the only protection for collected data.
 - PHP views escape untrusted values through `Support/Html`. Use `HtmlString` only
   for HTML already constructed and escaped by trusted renderer code.
 - `Resources/profiler/` contains SymPress overrides. `Resources/symfony/` is
@@ -79,22 +79,18 @@ collection/recorder hooks are registered only after the gate opens at
 `plugins_loaded`, after WordPress pluggables become available.
 
 Request server diagnostics use an explicit allowlist and never include the
-process environment. WordPress authentication cookies, authorization/set-cookie
-headers and nested credential, key and DSN fields are redacted before storage.
-Custom WordPress authentication/recovery/user/password cookie constants,
-`PHPSESSID` and the active PHP session cookie name are also masked, while ordinary
-preference cookies and the boolean authentication-cookie diagnostic are retained.
-URL userinfo is redacted by the sanitizer. Stored data remains privileged debug
-data and the cache directory must remain outside HTTP access.
+process environment. Everything else is stored and shown verbatim: cookies
+(including WordPress authentication and PHP session cookies),
+authorization/set-cookie headers, request parameters, URL userinfo and query
+strings, and credential-like fields in any collector payload are not redacted.
+Profiles are privileged debug data for development environments; the cache
+directory must remain outside HTTP access.
 
-Every collector, including extension collectors, crosses a final recursive
-redaction boundary before storage and rendering. It masks URL userinfo (also
-username-only and empty-password forms), sensitive URL query values and named
-credential fields in HTTP/error/exception payloads. Diagnostic arrays, counts,
-booleans and ordinary long messages are retained without the request input's
-50-item/500-character truncation; malformed nesting beyond 64 levels is closed
-with a placeholder. Custom collectors must still avoid collecting unlabeled
-secret text that no generic redactor can identify.
+Every collector, including extension collectors, is normalized before storage
+and rendering: objects become `[object Class]` (or their string value when
+`Stringable`), resources become `[resource]` and malformed nesting beyond 64
+levels is closed with a placeholder. Diagnostic arrays and long messages are
+retained without the request input's 50-item/500-character truncation.
 
 HTML insertion uses callback replacements in both the output buffer and toolbar
 template, preserving literal dollar sequences. The first collection finalizes
