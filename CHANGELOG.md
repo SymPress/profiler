@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.1.4 — 2026-11-13
+
+- HTML pages: the profile rendered into the toolbar (when WordPress flushes the page at `shutdown` priority 1) is now provisional. The profile is collected again and stored at the end of `shutdown`, so fatal errors, late log entries and the `shutdown` timeline event reach the profile. Duration and memory stay those of the response.
+- Insert the toolbar before the last `</body>` instead of the first, and only into the final output chunk, so a `</body>` inside an inline script or an explicit `ob_flush()` no longer misplaces it.
+
 ## 1.1.3 — 2026-11-13
 
 - Multisite: only super admins can use the profiler, because one store holds the profiles (cookies included) of every site in the network.
