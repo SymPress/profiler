@@ -92,12 +92,6 @@ final class ProfilerRequestMatcher
         return strtolower($panel);
     }
 
-    public function searchQuery(): string
-    {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only search parameter.
-        return $this->queryParam('q') ?? '';
-    }
-
     public function searchCriteria(int $defaultLimit = 50): ProfileSearchCriteria
     {
         $status = $this->queryParam('status');

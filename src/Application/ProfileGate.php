@@ -118,14 +118,6 @@ final class ProfileGate
 
     private function isAuditUserAgent(): bool
     {
-        if ($this->serverValue('HTTP_X_NEWSROOM_AUDIT') === '1') {
-            return true;
-        }
-
-        if (str_contains($this->serverValue('QUERY_STRING'), 'newsroom_audit=1')) {
-            return true;
-        }
-
         return preg_match(
             '/(Chrome-Lighthouse|HeadlessChrome|Lighthouse|PageSpeed|WebPageTest)/i',
             $this->serverValue('HTTP_USER_AGENT'),

@@ -96,10 +96,7 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
                     . $this->highlightSql($query['sql'])
                     . '</div><div><strong>Caller:</strong> '
                     . Html::escape($query['caller'] !== '' ? $query['caller'] : 'n/a')
-                    . '</div><p class="profiler-query-links"><a href="#">View formatted query</a> '
-                    . '<a href="#">View runnable query</a> '
-                    . '<a href="#">Explain query</a> '
-                    . '<a href="#">View query backtrace</a></p>',
+                    . '</div>',
                 ),
             ];
         }
