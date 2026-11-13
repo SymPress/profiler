@@ -60,7 +60,8 @@ $redirect = is_array($request['redirect'] ?? null) ? $request['redirect'] : null
             </dd>
         <?php endif; ?>
 
-        <?php if ($referer !== ''): ?>
+        <?php // The referer is request data: only link real web URLs, never javascript: or data: schemes. ?>
+        <?php if (preg_match('#^https?://#i', $referer) === 1): ?>
             <dt>Referer</dt>
             <dd>
                 <span class="icon icon-referer"><?php echo $referrer_icon ?></span>
