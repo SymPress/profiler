@@ -37,12 +37,8 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         return [
             'backend_class'         => is_object($objectCache) ? $objectCache::class : '',
             'persistent'            => function_exists('wp_using_ext_object_cache') ? wp_using_ext_object_cache() : false,
-            'global_groups'         => is_object($objectCache) && is_array($objectCache->global_groups ?? null)
-                ? array_values($objectCache->global_groups)
-                : [],
-            'non_persistent_groups' => is_object($objectCache) && is_array($objectCache->non_persistent_groups ?? null)
-                ? array_values($objectCache->non_persistent_groups)
-                : [],
+            'global_groups'         => is_object($objectCache) ? $this->groupNames($objectCache->global_groups ?? null) : [],
+            'non_persistent_groups' => is_object($objectCache) ? $this->groupNames($objectCache->non_persistent_groups ?? null) : [],
             'cache_entry_count'     => $this->countCacheEntries($cacheStore),
             'groups'                => $this->cacheGroups($cacheStore),
             'stats'                 => $this->readStats($objectCache),
@@ -153,12 +149,8 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
     {
         $groups = [];
         $objectCache = $GLOBALS['wp_object_cache'] ?? null;
-        $globalGroups = is_object($objectCache) && is_array($objectCache->global_groups ?? null)
-            ? $this->stringList($objectCache->global_groups)
-            : [];
-        $nonPersistentGroups = is_object($objectCache) && is_array($objectCache->non_persistent_groups ?? null)
-            ? $this->stringList($objectCache->non_persistent_groups)
-            : [];
+        $globalGroups = is_object($objectCache) ? $this->groupNames($objectCache->global_groups ?? null) : [];
+        $nonPersistentGroups = is_object($objectCache) ? $this->groupNames($objectCache->non_persistent_groups ?? null) : [];
 
         foreach ($cacheStore as $name => $entries) {
             if (!is_array($entries)) {
@@ -509,24 +501,24 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
         return is_scalar($value) || $value === null ? (string) $value : serialize($value);
     }
 
-    /** @return list<string> */
-    private function stringList(mixed $value): array
+    /**
+     * Core keys its group maps by name (['users' => true]); drop-ins often use plain lists.
+     *
+     * @return list<string>
+     */
+    private function groupNames(mixed $groups): array
     {
-        if (!is_array($value)) {
-            return [];
-        }
+        $names = [];
 
-        $strings = [];
-
-        foreach ($value as $item) {
-            if (!is_scalar($item) && !($item instanceof \Stringable)) {
-                continue;
+        foreach (is_array($groups) ? $groups : [] as $key => $value) {
+            if (is_string($key)) {
+                $names[] = $key;
+            } elseif (is_string($value)) {
+                $names[] = $value;
             }
-
-            $strings[] = (string) $item;
         }
 
-        return $strings;
+        return $names;
     }
 
     private function formatBytes(int $bytes): string

@@ -150,10 +150,11 @@ final class CronCollector extends AbstractCollector implements DataCollectorInte
 
                     $events[] = [
                         'timestamp'  => $eventTimestamp,
-                        'next_run'   => $eventTimestamp > 0 ? date_i18n('Y-m-d H:i:s', $eventTimestamp) : 'n/a',
+                        // wp_date() converts the UTC timestamp to the site timezone; date_i18n() printed UTC unlabelled.
+                        'next_run'   => $eventTimestamp > 0 ? (string) wp_date('Y-m-d H:i:s T', $eventTimestamp) : 'n/a',
                         'status'     => $status,
                         'hook'       => (string) $hook,
-                        'schedule'   => is_scalar($instance['schedule'] ?? null) ? (string) $instance['schedule'] : 'single',
+                        'schedule'   => is_string($instance['schedule'] ?? null) && $instance['schedule'] !== '' ? $instance['schedule'] : 'single',
                         'interval'   => $interval > 0 ? $this->humanInterval($interval) : 'n/a',
                         'args_count' => count($args),
                     ];
