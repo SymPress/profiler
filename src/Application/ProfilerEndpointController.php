@@ -24,63 +24,78 @@ final class ProfilerEndpointController
 
     public function handle(): void
     {
-        if (!$this->matcher->isInternalProfilerRequest()) {
+        $response = $this->response();
+
+        if ($response === null) {
             return;
+        }
+
+        if (isset($response['location'])) {
+            $this->redirect($response['location']);
+        }
+
+        $this->respond($response['body'], $response['status'], $response['type']);
+    }
+
+    /**
+     * The response for the current request, or null when it is not a profiler route. Kept free of
+     * output and exit so every route can be tested.
+     *
+     * @return array{status: int, type: string, body: string, location?: string}|null
+     */
+    public function response(): ?array
+    {
+        if (!$this->matcher->isInternalProfilerRequest()) {
+            return null;
         }
 
         if (!$this->gate->canAccessProfiler()) {
-            $this->respond('Access denied.', 403, 'text/plain; charset=UTF-8');
+            return $this->text('Access denied.', 403);
         }
 
         if ($this->matcher->isToolbarStylesheetRequest()) {
-            $this->respond($this->assets->toolbarCss(), 200, 'text/css; charset=UTF-8');
+            return ['status' => 200, 'type' => 'text/css; charset=UTF-8', 'body' => $this->assets->toolbarCss()];
         }
 
         if ($this->matcher->isFontRequest()) {
-            $this->renderFont();
+            return $this->fontResponse();
         }
 
         if ($this->matcher->isToolbarRequest()) {
-            $this->renderToolbar();
+            return $this->toolbarResponse();
         }
 
-        if (!$this->matcher->isProfilerRequest()) {
-            return;
-        }
-
-        $this->renderProfiler();
+        return $this->matcher->isProfilerRequest() ? $this->profilerResponse() : null;
     }
 
-    private function renderFont(): void
+    /** @return array{status: int, type: string, body: string} */
+    private function fontResponse(): array
     {
         $fontPath = $this->assets->fontPath($this->matcher->fontName() ?? '');
-
-        if ($fontPath === null || !is_file($fontPath)) {
-            $this->respond('Font not found.', 404, 'text/plain; charset=UTF-8');
-        }
-
-        $contents = file_get_contents($fontPath);
+        $contents = $fontPath !== null && is_file($fontPath) ? file_get_contents($fontPath) : false;
 
         if (!is_string($contents)) {
-            $this->respond('Font not found.', 404, 'text/plain; charset=UTF-8');
+            return $this->text('Font not found.', 404);
         }
 
-        $this->respond($contents, 200, 'font/woff2');
+        return ['status' => 200, 'type' => 'font/woff2', 'body' => $contents];
     }
 
-    private function renderToolbar(): void
+    /** @return array{status: int, type: string, body: string} */
+    private function toolbarResponse(): array
     {
         $token = $this->matcher->toolbarToken();
         $profile = is_string($token) ? $this->storage->load($token) : null;
 
         if (!$profile instanceof ProfileRecord) {
-            $this->respond('', 404, 'text/html; charset=UTF-8');
+            return $this->html('', 404);
         }
 
-        $this->respond($this->viewBuilder->renderToolbarContent($profile), 200, 'text/html; charset=UTF-8');
+        return $this->html($this->viewBuilder->renderToolbarContent($profile), 200);
     }
 
-    private function renderProfiler(): void
+    /** @return array{status: int, type: string, body: string, location?: string} */
+    private function profilerResponse(): array
     {
         $token = $this->matcher->token();
         $criteria = $this->matcher->searchCriteria();
@@ -89,39 +104,43 @@ final class ProfilerEndpointController
             $latest = $this->storage->latest(1)[0] ?? null;
 
             if ($latest instanceof ProfileRecord) {
-                $this->redirect($this->urls->profile($latest->token, $this->matcher->panel()));
+                return ['status' => 302, 'type' => '', 'body' => '', 'location' => $this->urls->profile($latest->token, $this->matcher->panel())];
             }
 
             $token = null;
         }
 
-        if ($token !== null) {
-            $profile = $this->storage->load($token);
-
-            if ($profile instanceof ProfileRecord) {
-                $html = $this->pageRenderer->renderProfile(
-                    $profile,
-                    $this->viewBuilder->toolbarBlocks($profile),
-                    $this->viewBuilder->panels($profile),
-                    $this->matcher->panel(),
-                );
-
-                $this->respond($html, 200, 'text/html; charset=UTF-8');
-            }
-
-            $profiles = $this->storage->search($criteria);
-            $html = $this->pageRenderer->renderResults($profiles, $criteria, $token);
-
-            $this->respond($html, 404, 'text/html; charset=UTF-8');
+        if ($token === null) {
+            return $this->html($this->pageRenderer->renderResults($this->storage->search($criteria), $criteria), 200);
         }
 
-        $profiles = $this->storage->search($criteria);
-        $html = $this->pageRenderer->renderResults($profiles, $criteria);
+        $profile = $this->storage->load($token);
 
-        $this->respond($html, 200, 'text/html; charset=UTF-8');
+        if (!$profile instanceof ProfileRecord) {
+            return $this->html($this->pageRenderer->renderResults($this->storage->search($criteria), $criteria, $token), 404);
+        }
+
+        return $this->html($this->pageRenderer->renderProfile(
+            $profile,
+            $this->viewBuilder->toolbarBlocks($profile),
+            $this->viewBuilder->panels($profile),
+            $this->matcher->panel(),
+        ), 200);
     }
 
-    private function redirect(string $url): void
+    /** @return array{status: int, type: string, body: string} */
+    private function text(string $body, int $status): array
+    {
+        return ['status' => $status, 'type' => 'text/plain; charset=UTF-8', 'body' => $body];
+    }
+
+    /** @return array{status: int, type: string, body: string} */
+    private function html(string $body, int $status): array
+    {
+        return ['status' => $status, 'type' => 'text/html; charset=UTF-8', 'body' => $body];
+    }
+
+    private function redirect(string $url): never
     {
         if (function_exists('wp_safe_redirect')) {
             wp_safe_redirect($url, 302);
