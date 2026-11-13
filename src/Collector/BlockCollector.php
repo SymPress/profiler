@@ -13,6 +13,8 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class BlockCollector extends AbstractCollector implements DataCollectorInterface
 {
+    private const int MAX_PARSED_BLOCKS = 200;
+
     public function __construct(
         private readonly ProfilerBlockRecorder $recorder,
     ) {
@@ -39,19 +41,20 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
 
         $rendered = $this->recorder->blocks();
         $parsed = $this->parsedBlocksFromQuery();
+        // Durations include nested blocks: only top-level blocks add up to real render time.
         $totalDuration = array_reduce(
             $rendered,
-            static fn (float $carry, array $block): float => $carry + (float) $block['duration_ms'],
+            static fn (float $carry, array $block): float => $block['depth'] === 0 ? $carry + $block['duration_ms'] : $carry,
             0.0,
         );
 
         return [
             'rendered'          => $rendered,
-            'parsed'            => $parsed,
+            'parsed'            => array_slice($parsed, 0, self::MAX_PARSED_BLOCKS),
             'rendered_count'    => count($rendered),
             'parsed_count'      => count($parsed),
             'total_duration_ms' => round($totalDuration, 2),
-            'dynamic_count'     => count(array_filter($rendered, static fn (array $block): bool => $block['name'] !== 'core/freeform')),
+            'dynamic_count'     => count(array_filter($rendered, static fn (array $block): bool => $block['dynamic'])),
         ];
     }
 
@@ -79,7 +82,7 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
             $renderRows[] = [
                 $index + 1,
                 str_repeat('  ', $block['depth']) . $block['name'],
-                sprintf('%.2f ms', $block['duration_ms']),
+                $block['timed'] ? sprintf('%.2f ms', $block['duration_ms']) : 'n/a',
                 $this->formatBytes($block['output_bytes']),
                 Html::dumpValue($block['attrs']),
             ];
@@ -108,9 +111,13 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
             ['label' => 'Parsed Content', 'badge' => count($parsedRows), 'target' => '#blocks-parsed'],
         ]);
         $html .= '<div id="blocks-rendered" class="profiler-tab-target">'
+            . '<p class="help">Durations include nested blocks. Blocks rendered directly by their parent (for example navigation links) have no own timing.</p>'
             . Html::table(['#', 'Block', 'Duration', 'Output', 'Attributes'], $renderRows)
             . '</div>';
         $html .= '<div id="blocks-parsed" class="profiler-tab-target">'
+            . (count($parsedRows) < $this->intValue($payload, 'parsed_count')
+                ? sprintf('<p class="help">Showing the first %d of %d parsed blocks.</p>', count($parsedRows), $this->intValue($payload, 'parsed_count'))
+                : '')
             . Html::table(['Post ID', 'Post', 'Block', 'Attributes'], $parsedRows)
             . '</div>';
 
@@ -152,7 +159,7 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
             );
         }
 
-        return array_slice($rows, 0, 200);
+        return $rows;
     }
 
     /**
@@ -187,7 +194,7 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
 
     /**
      * @param array<string, mixed> $payload
-     * @return list<array{name: string, attrs: array<array-key, mixed>, duration_ms: float, memory_mb: float, depth: int, output_bytes: int}>
+     * @return list<array{name: string, attrs: array<array-key, mixed>, duration_ms: float, timed: bool, memory_mb: float, depth: int, output_bytes: int}>
      */
     private function renderedRows(array $payload): array
     {
@@ -208,6 +215,8 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
                 'name'         => $this->stringValue($block, 'name', 'core/freeform'),
                 'attrs'        => is_array($block['attrs'] ?? null) ? $block['attrs'] : [],
                 'duration_ms'  => $this->floatValue($block, 'duration_ms'),
+                // Profiles stored before 1.2.2 have no flag: their blocks were all timed.
+                'timed'        => ($block['timed'] ?? true) === true,
                 'memory_mb'    => $this->floatValue($block, 'memory_mb'),
                 'depth'        => $this->intValue($block, 'depth'),
                 'output_bytes' => $this->intValue($block, 'output_bytes'),
