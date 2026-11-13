@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Profiler\Tests\Unit\Infrastructure;
 
 use SymPress\Profiler\Infrastructure\FilesystemProfileStorage;
+use SymPress\Profiler\Value\ProfileContext;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ProfileSearchCriteria;
 use PHPUnit\Framework\TestCase;
@@ -190,6 +191,20 @@ final class FilesystemProfileStorageTest extends TestCase
         self::assertSame('abc123', $loaded->token);
         self::assertSame('/profiling', $loaded->meta['path']);
         self::assertSame(12.4, $loaded->collectors['request']['duration_ms']);
+    }
+
+    public function testProfilesOfTheSameSecondSortByMilliseconds(): void
+    {
+        $context = new ProfileContext('t', 1763028000.1, 1763028000.9876, 0, 0, 0, 200, null, [], [], '/_profiler/t');
+        self::assertSame('2025-11-13T10:00:00.987+00:00', $context->finishedAtIso());
+
+        $storage = new FilesystemProfileStorage($this->storageDirectory);
+        $storage->save(new ProfileRecord('late', '2026-11-13T10:00:00.900+00:00', [], []));
+        $storage->save(new ProfileRecord('early', '2026-11-13T10:00:00.100+00:00', [], []));
+        $storage->save(new ProfileRecord('legacy', '2026-11-13T09:59:59+00:00', [], []));
+
+        self::assertSame(['late', 'early', 'legacy'], array_map(static fn (ProfileRecord $profile): string => $profile->token, $storage->latest(3)));
+        self::assertCount(2, $storage->search(new ProfileSearchCriteria(start: '2026-11-13T10:00:00+00:00')));
     }
 
     public function testRetentionKeepsOnlyTheNewestProfilesAndDropsExpiredOnes(): void

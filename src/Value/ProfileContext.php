@@ -109,8 +109,9 @@ final class ProfileContext
             new \DateTimeZone('UTC'),
         );
 
+        // Milliseconds: profiles of the same second (a page and its assets) must sort in request order.
         if ($dateTime instanceof \DateTimeImmutable) {
-            return $dateTime->format(DATE_ATOM);
+            return $dateTime->format(DATE_RFC3339_EXTENDED);
         }
 
         return gmdate(DATE_ATOM, (int) $timestamp);
