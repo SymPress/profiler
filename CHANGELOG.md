@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.2 — 2026-11-13
+
+- Blocks: start and finish of a block are now paired by identity. Blocks such as `core/navigation` render their children directly (`render_block` without `render_block_data`), which shifted every following name, duration, depth and output size: a header template part showed 306 bytes and 6.8 ms instead of 25.5 KiB and 21.6 ms. Directly rendered children are listed as untimed children of their parent.
+- Blocks are listed in document order, "Render time" counts top-level blocks only (it was 2.6× the request time), "Dynamic blocks" counts blocks with a render callback, markup outside block comments is named `core/freeform`, and the parsed-content tab says when it shows the first 200 of more blocks.
+- Templates: block themes show the resolved block template (for example `sympress//page`) instead of `template-canvas.php`, the hierarchy finds `templates/*.html`, and template parts list the rendered `core/template-part` blocks.
+- Templates: requests without a template (REST, AJAX) report no render time instead of the whole request duration.
+
 ## 1.2.1 — 2026-11-13
 
 - REST / AJAX: no longer build the REST server during collection. That fired `rest_api_init` for every plugin on page and AJAX requests and made the kernel report AJAX requests as `rest` (11 of 13 stored admin-ajax profiles). Routes are listed on REST requests, all of them instead of the first 120.
