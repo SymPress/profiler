@@ -80,7 +80,7 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
         $timeline = $this->timelinePayload($payload);
         $metrics = Html::metricTiles([
             ['label' => 'Total execution time', 'value' => sprintf('%.0f ms', $this->floatValue($payload, 'total_duration_ms'))],
-            ['label' => 'Symfony initialization', 'value' => sprintf('%.0f ms', $this->floatValue($payload, 'bootstrap_ms'))],
+            ['label' => 'Kernel initialization', 'value' => sprintf('%.0f ms', $this->floatValue($payload, 'bootstrap_ms'))],
             ['label' => 'Peak memory usage', 'value' => sprintf('%.2f MiB', $this->floatValue($payload, 'peak_memory_mb'))],
         ]);
 
