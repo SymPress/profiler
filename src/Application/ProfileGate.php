@@ -40,6 +40,7 @@ final class ProfileGate
         if (
             $this->isAuditUserAgent()
             || $this->isProfilerPageRequest()
+            || $this->isBackgroundNoise()
             || $this->context->isCron()
             || $this->context->isWpCli()
             || $this->context->isXmlRpc()
@@ -127,6 +128,20 @@ final class ProfileGate
             '/(Chrome-Lighthouse|HeadlessChrome|Lighthouse|PageSpeed|WebPageTest)/i',
             $this->serverValue('HTTP_USER_AGENT'),
         ) === 1;
+    }
+
+    /** Requests browsers and wp-admin send on their own; each would cost a full profile. */
+    private function isBackgroundNoise(): bool
+    {
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Runs before WordPress URL helpers are safe to use.
+        $path = (string) parse_url($this->serverValue('REQUEST_URI'), PHP_URL_PATH);
+
+        if (str_ends_with($path, '/favicon.ico')) {
+            return true;
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- Read-only comparison with a literal; changes no state.
+        return $this->context->isAjax() && ($_REQUEST['action'] ?? '') === 'heartbeat';
     }
 
     private function canRunOutsideDevelopment(): bool
