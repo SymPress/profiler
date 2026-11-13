@@ -10,7 +10,13 @@ final class ProfilerErrorRecorder
 {
     private const int E_STRICT_VALUE = 2048;
 
+    private const int MAX_ENTRIES = 500;
+
     private bool $enabled = false;
+    private int $dropped = 0;
+
+    /** @var callable|null */
+    private mixed $previousHandler = null;
 
     /** @var list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}> */
     private array $entries = [];
@@ -31,7 +37,7 @@ final class ProfilerErrorRecorder
 
         $this->enabled = true;
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- profiler-only runtime recorder for request-scoped log capture.
-        set_error_handler($this->record(...));
+        $this->previousHandler = set_error_handler($this->record(...));
     }
 
     public function captureShutdown(): void
@@ -57,13 +63,27 @@ final class ProfilerErrorRecorder
 
     public function record(int $severity, string $message, string $file = '', int $line = 0): bool
     {
-        if (!$this->enabled) {
-            return false;
+        // Errors silenced with @ or excluded by error_reporting() are not log entries.
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting, WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_error_reporting -- reads the level, changes nothing.
+        if ($this->enabled && (error_reporting() & $severity) !== 0) {
+            // A deprecation inside a loop must not grow the profile without limit.
+            if (count($this->entries) < self::MAX_ENTRIES) {
+                $this->entries[] = $this->normalizeEntry($severity, $message, $file, $line);
+            } else {
+                $this->dropped++;
+            }
         }
 
-        $this->entries[] = $this->normalizeEntry($severity, $message, $file, $line);
+        // Keep the handler that was installed before the profiler (Sentry, Query Monitor) working.
+        return is_callable($this->previousHandler)
+            ? ($this->previousHandler)($severity, $message, $file, $line) === true
+            : false;
+    }
 
-        return false;
+    /** Entries not stored because the per-request limit was reached. */
+    public function droppedCount(): int
+    {
+        return $this->dropped;
     }
 
     /** @return list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}> */
