@@ -291,3 +291,51 @@
         min-width: 760px;
     }
 }
+
+/*
+ * Tables. Symfony's .break-long-words uses word-break: break-word, which lets a column shrink to
+ * one character. With one long value in a row every other column collapsed and wrapped letter by
+ * letter. overflow-wrap: break-word keeps a column as wide as its longest word and only breaks
+ * words that cannot fit at all; .profiler-wide-col marks the columns that give way first.
+ */
+#collector-content table thead th {
+    white-space: nowrap;
+}
+
+#collector-content table .break-long-words {
+    hyphens: manual;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+#collector-content table .profiler-wide-col {
+    overflow-wrap: anywhere;
+}
+
+#collector-content table td pre,
+#collector-content table td pre.break-long-words {
+    margin: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+#collector-content .profiler-long-value summary {
+    cursor: pointer;
+}
+
+#collector-content .profiler-long-value[open] summary .sf-dump-str {
+    display: none;
+}
+
+/* Narrow windows: a table with many one-line columns scrolls inside its box instead of widening the page. */
+#collector-content .table-with-search-field {
+    margin: 1em 0;
+    overflow-x: auto;
+    /* Room for the table's 1px outline, which the scroll box would clip. */
+    padding: 1px;
+}
+
+/* The scroll box no longer collapses the table margin; carry it on the box so the search field stays in the header. */
+#collector-content .table-with-search-field > table {
+    margin: 0;
+}

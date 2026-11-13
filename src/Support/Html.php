@@ -6,6 +6,14 @@ namespace SymPress\Profiler\Support;
 
 final class Html
 {
+    private const int LONG_VALUE_LENGTH = 400;
+    private const int SHORT_VALUE_LENGTH = 40;
+    private const array WIDE_COLUMNS = [
+        'Args', 'Attributes', 'Callback', 'Candidates', 'Class', 'Dependencies', 'Description', 'File', 'Handles',
+        'Info', 'Listener', 'Log', 'Message', 'Message Preview', 'Path', 'Request options', 'Route', 'Source', 'Status / Error',
+        'Title', 'Transport', 'URL', 'Value',
+    ];
+
     public static function escape(mixed $value): string
     {
         return htmlspecialchars(
@@ -58,7 +66,7 @@ final class Html
             $html .= '<tr>';
 
             foreach ($row as $index => $cell) {
-                $html .= '<td' . self::columnClass($headers[$index] ?? '') . '>' . self::renderValue($cell) . '</td>';
+                $html .= '<td' . self::columnClass($headers[$index] ?? '', $cell) . '>' . self::renderValue($cell) . '</td>';
             }
 
             $html .= '</tr>';
@@ -255,7 +263,20 @@ final class Html
         }
 
         if (is_string($value) || $value instanceof \Stringable) {
-            return new HtmlString('<span class="sf-dump-str">"' . self::escape($value) . '"</span>');
+            $string = (string) $value;
+            $dump = '<span class="sf-dump-str">"' . self::escape($string) . '"</span>';
+
+            if (strlen($string) <= self::LONG_VALUE_LENGTH) {
+                return new HtmlString($dump);
+            }
+
+            // Nothing is cut: long values stay complete but start collapsed so one row cannot fill the page.
+            return new HtmlString(sprintf(
+                '<details class="profiler-long-value"><summary><span class="sf-dump-str">"%s…"</span> <span class="text-muted">(%d bytes)</span></summary>%s</details>',
+                self::escape(mb_strcut($string, 0, 120)),
+                strlen($string),
+                $dump,
+            ));
         }
 
         return new HtmlString(self::codeBlock($value));
@@ -333,10 +354,14 @@ final class Html
         };
     }
 
-    private static function columnClass(string $header): string
+    private static function columnClass(string $header, mixed $cell = null): string
     {
-        $classes = match ($header) {
-            '#', 'Count', 'Queries', 'Duration (ms)' => ['num-col', 'nowrap'],
+        $classes = match (true) {
+            in_array($header, ['#', 'Count', 'Queries', 'Duration (ms)'], true) => ['num-col', 'nowrap'],
+            // Columns that hold paths, URLs and dumps give way first when the table runs out of room.
+            in_array($header, self::WIDE_COLUMNS, true) => ['break-long-words', 'profiler-wide-col'],
+            // Short names (header names, handles, hooks) stay on one line instead of wrapping at hyphens.
+            is_scalar($cell) && strlen((string) $cell) <= self::SHORT_VALUE_LENGTH => ['nowrap'],
             default => ['break-long-words'],
         };
 
