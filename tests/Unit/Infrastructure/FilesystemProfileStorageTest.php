@@ -67,6 +67,23 @@ final class FilesystemProfileStorageTest extends TestCase
         self::assertCount(1, $storage->search(new ProfileSearchCriteria(method: 'GET')));
     }
 
+    public function testInvalidUtf8AndNonFiniteNumbersDoNotLoseTheProfile(): void
+    {
+        $storage = new FilesystemProfileStorage($this->storageDirectory);
+        $storage->save(new ProfileRecord(
+            'binary',
+            '2026-11-13T10:00:00+00:00',
+            ['uri' => "/?x=\xFF"],
+            ['request' => ['query' => ['x' => "\xFF"], 'ratio' => NAN, 'ok' => 'kept']],
+        ));
+
+        $loaded = $storage->load('binary');
+        self::assertInstanceOf(ProfileRecord::class, $loaded);
+        self::assertSame("/?x=\u{FFFD}", $loaded->meta['uri']);
+        self::assertSame('kept', $loaded->collector('request')['ok']);
+        self::assertCount(1, $storage->search(new ProfileSearchCriteria(text: 'binary')));
+    }
+
     public function testNewStorageAndReplacementsStayPrivateWithPermissiveUmask(): void
     {
         $previousUmask = umask(0000);
