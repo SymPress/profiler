@@ -56,6 +56,10 @@ timestamp, source, channel, context, and extra before persistence.
   are not changed. Already-private read-only stores retain legacy search fallback.
   Storage tokens use the route's existing ASCII alphanumeric/underscore/hyphen
   contract so file operations cannot escape the private directory.
+- Retention is enforced on every save: at most `profiler.max_profiles` (100)
+  newest profiles younger than `profiler.ttl` (48 hours) are kept. Search and
+  `latest()` return index summaries; only `load()` decodes a full profile.
+- wp-admin heartbeat requests and `favicon.ico` are never profiled.
 - The gate prevents collection in excluded contexts and controls profiler access;
   it is the only protection for collected data.
 - PHP views escape untrusted values through `Support/Html`. Use `HtmlString` only

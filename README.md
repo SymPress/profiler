@@ -56,6 +56,8 @@ Collection can also be controlled through the service parameters in
 ```yaml
 parameters:
     profiler.storage_dir: '%kernel.cache_dir%/profiler'
+    profiler.max_profiles: 100   # newest profiles kept on disk
+    profiler.ttl: 172800         # seconds before a profile expires
     profiler.collect: true
     profiler.collect_parameter: ''
     profiler.toolbar.ajax_replace: false

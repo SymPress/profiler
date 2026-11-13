@@ -1,5 +1,7 @@
 parameters:
     profiler.storage_dir: '%kernel.cache_dir%/profiler'
+    profiler.max_profiles: 100
+    profiler.ttl: 172800
     profiler.collect: true
     profiler.collect_parameter: ''
     profiler.toolbar.ajax_replace: false
@@ -31,6 +33,8 @@ services:
     SymPress\Profiler\Infrastructure\FilesystemProfileStorage:
         arguments:
             $storageDirectory: '%profiler.storage_dir%'
+            $maxProfiles: '%profiler.max_profiles%'
+            $ttlSeconds: '%profiler.ttl%'
 
     SymPress\Profiler\Application\Profiler:
         arguments:

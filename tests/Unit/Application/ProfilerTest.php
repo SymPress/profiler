@@ -229,7 +229,8 @@ final class ProfilerTest extends TestCase
             $profiler->start();
             $profiler->recordThrowable(new \RuntimeException('Failure: ' . $url));
             $profiler->finish();
-            $profile = $storage->latest(1)[0];
+            $profile = $storage->load($storage->latest(1)[0]->token);
+            self::assertInstanceOf(ProfileRecord::class, $profile);
             $json = (string) file_get_contents($directory . '/' . $profile->token . '.json');
             self::assertStringContainsString($url, $json);
             self::assertCount(61, $profile->collector('contract')['entries']);
