@@ -51,6 +51,7 @@ final class ProfilerPageRendererTest extends TestCase
         self::assertStringContainsString('Search profiles', $html);
         self::assertStringNotContainsString('Last 10', $html);
         self::assertStringContainsString('Request panel', $html);
+        self::assertStringNotContainsString('<span>200</span>', $html);
     }
 
     public function testRefererIsOnlyLinkedForWebUrls(): void

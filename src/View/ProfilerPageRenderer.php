@@ -122,7 +122,8 @@ final class ProfilerPageRenderer
             $label = $menu['label'];
             $icon = $menu['icon'];
             $enabled = $panel instanceof CollectorPanel && $panel->enabled;
-            $metric = $panel instanceof CollectorPanel
+            // Like Symfony, the request entry has no badge: the status is in the page header.
+            $metric = $panel instanceof CollectorPanel && $id !== 'request'
                 ? ($panel->metric !== '' ? $panel->metric : ($blockMetrics[$panel->id] ?? ''))
                 : '';
 
