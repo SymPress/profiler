@@ -279,7 +279,17 @@ final class Html
             ));
         }
 
-        return new HtmlString(self::codeBlock($value));
+        $code = self::codeBlock($value);
+
+        if (!is_array($value) || strlen($code) <= self::LONG_VALUE_LENGTH) {
+            return new HtmlString($code);
+        }
+
+        return new HtmlString(sprintf(
+            '<details class="profiler-long-value"><summary><span class="sf-dump-note">array</span> <span class="text-muted">(%d items)</span></summary>%s</details>',
+            count($value),
+            $code,
+        ));
     }
 
     public static function link(string $url, string $label = ''): HtmlString
