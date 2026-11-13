@@ -30,6 +30,8 @@ final class HtmlTest extends TestCase
         self::assertStringContainsString(htmlspecialchars($long, ENT_QUOTES), $html);
         self::assertStringNotContainsString('<b>', $html);
         self::assertSame('<span class="sf-dump-str">"short"</span>', Html::dumpValue('short')->html);
+        self::assertStringStartsWith('<details class="profiler-long-value"><summary><span class="sf-dump-note">array</span> <span class="text-muted">(60 items)</span>', Html::dumpValue(range(1, 60))->html);
+        self::assertStringStartsWith('<pre', Html::dumpValue(['a' => 1])->html);
     }
 
     public function testFontResolvesWithoutFileExtensionInTheUrl(): void
