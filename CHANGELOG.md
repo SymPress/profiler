@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.0 — 2026-11-13
+
+- Assets: new "Script modules" tab listing enqueued script modules and the modules they import, with source, version and dependencies (WordPress 7.0+; WordPress exposes no module list before).
+
 ## 1.2.8 — 2026-11-13
 
 - Logs: errors raised while plugins load are recorded. In environments that allow profiling, recording starts at `muplugins_loaded` and the entries are dropped if the gate stays closed for the request; the last error from before (for example a kernel boot deprecation) is kept as well. Previously recording started at `plugins_loaded` priority 35.
