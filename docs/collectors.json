@@ -7,6 +7,7 @@
       "role": "lifecycle",
       "collector_keys": ["*"],
       "hooks": [
+        {"hook": "muplugins_loaded", "method": "captureEarlyErrors", "priority": -1000},
         {"hook": "plugins_loaded", "method": "register", "priority": -1000}
       ]
     },

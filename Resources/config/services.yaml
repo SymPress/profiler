@@ -54,6 +54,7 @@ services:
         arguments:
             $loader: '@profiler.hook_loader'
         tags:
+            - { name: kernel.hook, hook: 'muplugins_loaded', method: captureEarlyErrors, priority: -1000 }
             - { name: kernel.hook, hook: 'plugins_loaded', method: register, priority: -1000 }
 
     SymPress\Profiler\Hook\ProfilerRouteHooks:
