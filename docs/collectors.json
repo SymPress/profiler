@@ -154,7 +154,7 @@
       "priority": 55,
       "views": {"toolbar": "always", "panel": true},
       "sources": ["WordPress locale functions", "global l10n"],
-      "payload_keys": ["locale", "fallback_locale", "is_rtl", "timezone", "loaded_domains", "domain_count", "captured_at"],
+      "payload_keys": ["locale", "user_locale", "is_rtl", "timezone", "domains", "domain_count", "captured_at"],
       "sensitive_fields": []
     },
     {

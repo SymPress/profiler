@@ -15,6 +15,7 @@ use SymPress\Profiler\Collector\AssetCollector;
 use SymPress\Profiler\Collector\CacheCollector;
 use SymPress\Profiler\Collector\CronCollector;
 use SymPress\Profiler\Collector\DatabaseCollector;
+use SymPress\Profiler\Collector\LocalizationCollector;
 use SymPress\Profiler\Collector\OptionsCollector;
 use SymPress\Profiler\Collector\RestAjaxCollector;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
@@ -174,6 +175,21 @@ final class CollectorDataTest extends TestCase
             ['id' => '@wordpress/block-library/navigation/view', 'src' => '/navigation.js', 'version' => 'abc', 'dependencies' => ['@wordpress/interactivity'], 'enqueued' => true],
             ['id' => '@wordpress/interactivity', 'src' => '/interactivity.js', 'version' => '6.8.0', 'dependencies' => [], 'enqueued' => false],
         ], $modules);
+    }
+
+    public function testTranslationTellsLoadedDomainsFromLookupsWithoutAFile(): void
+    {
+        $GLOBALS['l10n'] = ['sympress' => new \stdClass(), 'default' => new \NOOP_Translations()];
+
+        try {
+            $payload = (new LocalizationCollector())->collect($this->context());
+        } finally {
+            unset($GLOBALS['l10n']);
+        }
+
+        self::assertSame([['domain' => 'default', 'loaded' => false], ['domain' => 'sympress', 'loaded' => true]], $payload['domains']);
+        self::assertSame(1, $payload['domain_count']);
+        self::assertSame('de_DE', $payload['user_locale']);
     }
 
     private function gate(): ProfileGate
