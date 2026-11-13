@@ -1,3 +1,8 @@
+/* The bundled font is declared as "JetBrainsMono"; the upstream variable only names an installed "JetBrains Mono". */
+:root {
+    --font-family-monospace: "JetBrainsMono", "JetBrains Mono", ui-monospace, "Roboto Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 /* WordPress collector content uses Symfony WebProfiler classes with extra-long WP values. */
 #collector-wrapper,
 #collector-content {

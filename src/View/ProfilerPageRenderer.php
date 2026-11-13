@@ -214,7 +214,7 @@ final class ProfilerPageRenderer
             'profiler/base',
             [
                 'title'        => $title,
-                'profiler_css' => $this->assets->profilerCss($this->urls->font('JetBrainsMono.woff2')),
+                'profiler_css' => $this->assets->profilerCss($this->urls->font('JetBrainsMono')),
                 'body_html'    => $bodyHtml,
             ],
         );

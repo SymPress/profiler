@@ -115,6 +115,11 @@ final class WebProfilerAssets
             return null;
         }
 
+        // The URL has no file extension: web servers answer *.woff2 as a static file and never reach PHP.
+        if (!str_ends_with($normalized, '.woff2')) {
+            $normalized .= '.woff2';
+        }
+
         foreach ($this->resourceCandidates('fonts/' . $normalized) as $path) {
             if (is_file($path)) {
                 return $path;
