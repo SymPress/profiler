@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.1.5 — 2026-11-13
+
+- Fix table layout in all panels: columns no longer collapse to a few pixels and wrap letter by letter when one cell holds a long value (Events, Options, Assets, Blocks, REST routes, request headers). Short values stay on one line, columns with paths, URLs and dumps give way first, and narrow windows scroll the table inside its box.
+- Values over 400 bytes (option values, serialized data) start collapsed and expand in place; nothing is cut.
+- Load the bundled JetBrains Mono font: its URL has no `.woff2` extension any more (web servers answered that as a static 404) and the stylesheet now uses the bundled family name.
+- The sidebar's Request / Response entry has no status badge, as in Symfony; long labels no longer push badges out of their entry.
+
 ## 1.1.4 — 2026-11-13
 
 - HTML pages: the profile rendered into the toolbar (when WordPress flushes the page at `shutdown` priority 1) is now provisional. The profile is collected again and stored at the end of `shutdown`, so fatal errors, late log entries and the `shutdown` timeline event reach the profile. Duration and memory stay those of the response.
