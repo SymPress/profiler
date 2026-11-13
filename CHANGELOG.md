@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.1.0 — 2026-11-13
+
+- Show option values in the Options panel (largest autoloaded options and transients) instead of names and sizes only.
+- Record and show all `wp_remote_*()` request options in the HTTP Client panel, including headers, body and cookies, instead of method, timeout, redirection, HTTP version and blocking only.
+
 ## 1.0.8 — 2026-11-13
 
 - Show collected diagnostics verbatim instead of `[redacted]` placeholders. The key-based redaction also masked harmless values such as the WordPress version (`wordpress_` prefix) or any key containing `key`, `session` or `token`. Cookies, authorization headers, request parameters, URLs and credential-like payload fields are now stored and shown as collected.
