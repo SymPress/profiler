@@ -134,6 +134,10 @@ final class ProfilerEndpointController
 
     private function respond(string $body, int $status, string $contentType): never
     {
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true);
+        }
+
         if (function_exists('status_header')) {
             status_header($status);
         } else {

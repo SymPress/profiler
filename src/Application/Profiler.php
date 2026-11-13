@@ -283,6 +283,11 @@ final class Profiler
 
     private function emitHeaders(): void
     {
+        // Page caches that store logged-in responses would otherwise serve the admin's toolbar to others.
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true);
+        }
+
         if (headers_sent()) {
             return;
         }
