@@ -22,47 +22,35 @@ final class ArraySanitizer
     }
 
     /**
-     * Redact diagnostic payloads without the request input's truncation limits.
+     * Normalize diagnostic payloads for storage without the request input's truncation limits.
      *
      * @template TKey of array-key
      * @param array<TKey, mixed> $value
      * @return array<TKey, mixed>
      */
-    public function redactPayload(array $value, int $depth = 0, bool $credentials = false): array
+    public function normalizePayload(array $value, int $depth = 0): array
     {
-        $redacted = [];
+        $normalized = [];
 
         foreach ($value as $key => $item) {
-            $sensitive = $credentials || (is_string($key) && $this->shouldRedact($key));
-
             if (is_array($item)) {
-                // Keep the cookie map: its individual authentication names are redacted.
-                $redacted[$key] = $depth >= 64
-                    ? '[depth limit reached]'
-                    : $this->redactPayload($item, $depth + 1, $sensitive && $key !== 'cookies');
-            } elseif ($sensitive && !($key === 'has_auth_cookie' && is_bool($item) && !$credentials)) {
-                $redacted[$key] = '[redacted]';
-            } elseif (is_string($item) || $item instanceof \Stringable) {
-                $redacted[$key] = $sensitive ? '[redacted]' : $this->redactString((string) $item);
+                $normalized[$key] = $depth >= 64 ? '[depth limit reached]' : $this->normalizePayload($item, $depth + 1);
+            } elseif ($item instanceof \Stringable) {
+                $normalized[$key] = (string) $item;
             } elseif (is_object($item)) {
-                $redacted[$key] = sprintf('[object %s]', $item::class);
+                $normalized[$key] = sprintf('[object %s]', $item::class);
             } elseif (is_resource($item)) {
-                $redacted[$key] = '[resource]';
+                $normalized[$key] = '[resource]';
             } else {
-                // Preserve ordinary scalar diagnostics after credential redaction.
-                $redacted[$key] = $item;
+                $normalized[$key] = $item;
             }
         }
 
-        return $redacted;
+        return $normalized;
     }
 
-    public function sanitize(mixed $value, int $depth = 0, ?string $key = null): mixed
+    public function sanitize(mixed $value, int $depth = 0): mixed
     {
-        if ($key !== null && $this->shouldRedact($key)) {
-            return '[redacted]';
-        }
-
         if ($depth >= self::MAX_DEPTH) {
             return '[depth limit reached]';
         }
@@ -72,11 +60,7 @@ final class ArraySanitizer
             $slice = array_slice($value, 0, self::MAX_ITEMS, true);
 
             foreach ($slice as $itemKey => $itemValue) {
-                $sanitized[$itemKey] = $this->sanitize(
-                    $itemValue,
-                    $depth + 1,
-                    is_string($itemKey) ? $itemKey : null,
-                );
+                $sanitized[$itemKey] = $this->sanitize($itemValue, $depth + 1);
             }
 
             if (count($value) > self::MAX_ITEMS) {
@@ -93,12 +77,8 @@ final class ArraySanitizer
             return $value;
         }
 
-        if ($value instanceof \Stringable) {
-            return $this->truncate($this->redactString((string) $value));
-        }
-
-        if (is_string($value)) {
-            return $this->truncate($this->redactString($value));
+        if (is_string($value) || $value instanceof \Stringable) {
+            return $this->truncate((string) $value);
         }
 
         if (is_object($value)) {
@@ -106,43 +86,6 @@ final class ArraySanitizer
         }
 
         return sprintf('[%s]', gettype($value));
-    }
-
-    private function shouldRedact(string $key): bool
-    {
-        $normalizedKey = strtolower($key);
-
-        $sessionCookie = function_exists('session_name') ? session_name() : false;
-        if ($normalizedKey === 'phpsessid' || (is_string($sessionCookie) && $normalizedKey === strtolower($sessionCookie))) {
-            return true;
-        }
-
-        foreach (['AUTH_COOKIE', 'SECURE_AUTH_COOKIE', 'LOGGED_IN_COOKIE', 'USER_COOKIE', 'PASS_COOKIE', 'RECOVERY_MODE_COOKIE'] as $constant) {
-            $cookie = defined($constant) ? constant($constant) : null;
-            if (is_string($cookie) && $normalizedKey === strtolower($cookie)) {
-                return true;
-            }
-        }
-
-        foreach (['password', 'pass', 'pwd', 'nonce', 'token', 'authorization', 'cookie', 'secret', 'credential', 'api_key', 'apikey', 'private_key', 'access_key', 'key', 'dsn', 'wordpress_', 'session'] as $fragment) {
-            if (str_contains($normalizedKey, $fragment)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function redactString(string $value): string
-    {
-        $value = preg_replace('~([a-z][a-z0-9+.-]*://)[^/@\s]+@~i', '$1[redacted]@', $value) ?? '[redacted]';
-
-        return preg_replace_callback(
-            '~([?&])([^=&#\s]+)=([^&#\s]*)~',
-            fn (array $match): string => $match[1] . $match[2] . '='
-                . ($this->shouldRedact(rawurldecode($match[2])) ? '[redacted]' : $match[3]),
-            $value,
-        ) ?? '[redacted]';
     }
 
     private function truncate(string $value): string

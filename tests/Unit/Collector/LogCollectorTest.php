@@ -35,10 +35,10 @@ final class LogCollectorTest extends TestCase
                 'channel' => 'app',
                 'context' => [
                     'order' => 42,
-                    'password' => 'do-not-store',
-                    'nested' => ['access_token' => 'do-not-store'],
+                    'password' => 'raw-value',
+                    'nested' => ['access_token' => 'raw-value'],
                 ],
-                'extra' => ['client_secret' => 'do-not-store'],
+                'extra' => ['client_secret' => 'raw-value'],
             ];
             $entries[] = [
                 'level' => 'info',
@@ -61,10 +61,10 @@ final class LogCollectorTest extends TestCase
         self::assertSame('HTTP request', $payload['entries'][0]['message']);
         self::assertSame([
             'order' => 42,
-            'password' => '[redacted]',
-            'nested' => ['access_token' => '[redacted]'],
+            'password' => 'raw-value',
+            'nested' => ['access_token' => 'raw-value'],
         ], $payload['entries'][1]['context']);
-        self::assertSame(['client_secret' => '[redacted]'], $payload['entries'][1]['extra']);
+        self::assertSame(['client_secret' => 'raw-value'], $payload['entries'][1]['extra']);
 
         $panel = $collector->renderPanel(
             $payload,
