@@ -61,7 +61,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             'template'              => $context->template(),
             'request_headers'       => $this->requestHeaders(),
             'response_headers'      => $this->sanitizer->normalizePayload($responseHeaders),
-            'response_content_type' => $responseHeaders['content-type'] ?? '',
+            'response_content_type' => implode(', ', (array) ($responseHeaders['content-type'] ?? '')),
             // phpcs:disable WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing
             'query'                 => $this->requestArray($_GET),
             'post'                  => $this->requestArray($_POST),
@@ -227,6 +227,15 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     private function requestHeaders(): array
     {
         $headers = [];
+
+        // $_SERVER also holds HTTP_* environment variables (ddev exports HTTP_EXPOSE); ask the SAPI when it knows.
+        foreach (function_exists('getallheaders') ? getallheaders() : [] as $name => $value) {
+            $headers[strtolower((string) $name)] = is_scalar($value) ? (string) $value : '[complex]';
+        }
+
+        if ($headers !== []) {
+            return $headers;
+        }
 
         foreach ($this->serverParameters() as $key => $value) {
             if (!str_starts_with($key, 'HTTP_') && $key !== 'CONTENT_TYPE') {
