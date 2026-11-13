@@ -352,3 +352,36 @@
     flex-shrink: 0;
     margin-left: 6px;
 }
+
+/* Profile search: labelled fields in an even grid. */
+#collector-content .profiler-search-form {
+    display: grid;
+    gap: 14px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    margin: 1.5rem 0;
+}
+
+#collector-content .profiler-search-form label {
+    display: block;
+    margin: 0;
+}
+
+#collector-content .profiler-search-label {
+    display: block;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+#collector-content .profiler-search-form input,
+#collector-content .profiler-search-form select {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+#collector-content .profiler-search-actions {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    grid-column: 1 / -1;
+}
