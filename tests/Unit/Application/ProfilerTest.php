@@ -166,7 +166,7 @@ final class ProfilerTest extends TestCase
         self::assertCount(1, $viewBuilder->toolbarBlocks($profile));
     }
 
-    public function testHtmlCallbackPreservesDollarSequencesAndCollectsOnlyOnce(): void
+    public function testHtmlCallbackStoresProvisionalProfileAndFinishStoresTheFinalOne(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_ACCEPT'] = 'text/html';
@@ -179,16 +179,25 @@ final class ProfilerTest extends TestCase
         $profiler->start();
         ob_start();
         $profiler->beginHtmlBuffer();
-        echo '<html><body>literal $1 and ${2}</body></html>';
+        echo '<html><body><script>var t = "</body>";</script>';
+        ob_flush();
+        $partial = (string) ob_get_contents();
+        echo 'literal $1 and ${2}</body></html>';
         ob_end_flush();
         $content = ob_get_clean();
         self::assertIsString($content);
+        self::assertStringNotContainsString('Cost $1', $partial);
         self::assertStringContainsString('literal $1 and ${2}', $content);
-        self::assertStringContainsString('Cost $1', $content);
         self::assertStringContainsString('${2}', $content);
+        self::assertGreaterThan(strpos($content, 'literal'), strpos($content, 'Cost $1'));
+        self::assertSame(0, $storage->saved?->collector('contract')['throwable_count']);
+
+        // Anything that happens after WordPress flushed the page still reaches the stored profile.
+        $profiler->recordThrowable(new \RuntimeException('late shutdown failure'));
         $profiler->finish();
         $profiler->finish();
-        self::assertSame(1, $storage->saveCount);
+        self::assertSame(2, $storage->saveCount);
+        self::assertSame(1, $storage->saved?->collector('contract')['throwable_count']);
     }
 
     public function testStoredAndRenderedDiagnosticsKeepCollectorValuesVerbatimWithoutTruncatingPayloads(): void

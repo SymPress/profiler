@@ -21,6 +21,8 @@ final class Profiler
     private bool $htmlBufferStarted = false;
     private float $startedAt = 0.0;
     private int $startMemoryBytes = 0;
+    /** @var array{finished_at: float, memory: int, peak_memory: int}|null */
+    private ?array $measurement = null;
     private string $token = '';
     private ?string $template = null;
     private ?ProfileRecord $profile = null;
@@ -156,8 +158,13 @@ final class Profiler
         $this->ensureProfile(true);
     }
 
-    private function injectToolbar(string $content): string
+    private function injectToolbar(string $content, int $phase = PHP_OUTPUT_HANDLER_FINAL): string
     {
+        // An explicit flush hands over a partial document: wait for the final chunk.
+        if (($phase & PHP_OUTPUT_HANDLER_FINAL) === 0) {
+            return $content;
+        }
+
         $profile = $this->ensureProfile();
 
         if (!$profile instanceof ProfileRecord || !$this->shouldInjectIntoPayload($content)) {
@@ -170,15 +177,10 @@ final class Profiler
             return $content;
         }
 
-        if (preg_match('/<\/body>/i', $content) === 1) {
-            $injected = preg_replace_callback('/<\/body>/i', static fn (): string => $toolbar . '</body>', $content, 1);
+        // The last closing tag ends the document; earlier ones can sit inside inline scripts or templates.
+        $position = strripos($content, '</body>');
 
-            if (is_string($injected)) {
-                return $injected;
-            }
-        }
-
-        return $content . $toolbar;
+        return $position === false ? $content . $toolbar : substr_replace($content, $toolbar, $position, 0);
     }
 
     private function ensureProfile(bool $finalize = false): ?ProfileRecord
@@ -191,13 +193,25 @@ final class Profiler
             return $this->profile;
         }
 
+        // The toolbar is rendered when WordPress flushes the page at shutdown priority 1. That profile is
+        // provisional: finish() collects again at the end of shutdown so fatal errors, late log entries
+        // and the shutdown timeline reach the stored profile (Symfony's collect/lateCollect split).
+
+        // Measure once, when the response is done: the final pass must not add shutdown work and the
+        // profiler's own collection to the request duration and memory.
+        $this->measurement ??= [
+            'finished_at' => microtime(true),
+            'memory'      => memory_get_usage(true),
+            'peak_memory' => memory_get_peak_usage(true),
+        ];
+
         $context = new ProfileContext(
             $this->token,
             $this->startedAt,
-            microtime(true),
+            $this->measurement['finished_at'],
             $this->startMemoryBytes,
-            memory_get_usage(true),
-            memory_get_peak_usage(true),
+            $this->measurement['memory'],
+            $this->measurement['peak_memory'],
             $this->statusCode(),
             $this->template,
             $this->throwables,
@@ -234,7 +248,7 @@ final class Profiler
             error_log(sprintf('Profiler could not store profile %s: %s', $this->token, $throwable->getMessage()));
         }
 
-        $this->finalized = true;
+        $this->finalized = $finalize;
 
         return $this->profile;
     }
@@ -446,7 +460,9 @@ final class Profiler
 
         return str_starts_with($trimmedContent, '<!DOCTYPE html')
             || str_starts_with($trimmedContent, '<html')
-            || str_contains($trimmedContent, '<body');
+            || str_contains($trimmedContent, '<body')
+            // After an explicit flush the final chunk only holds the end of the document.
+            || stripos($trimmedContent, '</body>') !== false;
     }
 
     private function profilerUrl(string $token): string

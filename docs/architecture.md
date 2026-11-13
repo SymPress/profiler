@@ -97,13 +97,16 @@ and rendering: objects become `[object Class]` (or their string value when
 `Stringable`), resources become `[resource]` and malformed nesting beyond 64
 levels is closed with a placeholder.
 
-HTML insertion uses callback replacements in both the output buffer and toolbar
-template, preserving literal dollar sequences. The first collection finalizes
-and saves a profile; shutdown and subsequent buffer callbacks reuse it.
-Small `.json.index` sidecars hold search metadata; search opens full collector
-JSON only for matching result profiles. Existing profiles without sidecars are decoded once and backfilled for subsequent
-searches. Read-only legacy stores keep a compatible full-file fallback. Sidecars
-expire with their profiles.
+The toolbar is inserted before the last `</body>` of the final output chunk.
+On HTML pages WordPress flushes the buffer at `shutdown` priority 1; the profile
+collected there feeds the toolbar and is provisional. `finish()` at the end of
+`shutdown` collects again and stores the final profile, so fatal errors, late
+log entries and the `shutdown` timeline event are included. Duration and memory
+are measured once, at the first collection. Small `.json.index` sidecars hold
+search metadata; search and `latest()` return these summaries without opening
+the full collector JSON. Existing profiles without sidecars are decoded once
+and backfilled for subsequent searches. Read-only legacy stores keep a
+compatible full-file fallback. Sidecars expire with their profiles.
 
 ## Stopwatch service compatibility
 
