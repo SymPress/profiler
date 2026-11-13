@@ -43,6 +43,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 'name'  => (string) $name,
                 'bytes' => $bytes,
                 'type'  => get_debug_type($value),
+                'value' => $value,
             ];
         }
 
@@ -82,6 +83,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 $this->formatBytes($option['bytes']),
                 $option['bytes'],
                 $option['type'],
+                Html::dumpValue($option['value']),
             ];
         }
 
@@ -92,6 +94,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 $transient['name'],
                 $this->formatBytes($transient['bytes']),
                 $transient['autoload'],
+                Html::dumpValue($transient['value']),
             ];
         }
 
@@ -107,12 +110,10 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
             ['label' => 'Transients', 'badge' => count($transientRows), 'target' => '#options-transients'],
         ]);
         $html .= '<div id="options-autoloaded" class="profiler-tab-target">';
-        $html .= '<p class="help">Values are intentionally not displayed; this panel records names and serialized sizes only.</p>';
-        $html .= Html::table(['Name', 'Size', 'Bytes', 'Type'], $autoloadRows);
+        $html .= Html::table(['Name', 'Size', 'Bytes', 'Type', 'Value'], $autoloadRows);
         $html .= '</div>';
         $html .= '<div id="options-transients" class="profiler-tab-target">';
-        $html .= '<p class="help">Transient values are not displayed.</p>';
-        $html .= Html::table(['Name', 'Size', 'Autoload'], $transientRows);
+        $html .= Html::table(['Name', 'Size', 'Autoload', 'Value'], $transientRows);
         $html .= '</div>';
 
         return $this->panel(
@@ -124,7 +125,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
         );
     }
 
-    /** @return list<array{name: string, bytes: int, autoload: string}> */
+    /** @return list<array{name: string, bytes: int, autoload: string, value: string}> */
     private function transients(): array
     {
         $wpdb = $GLOBALS['wpdb'] ?? null;
@@ -140,7 +141,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
         $table = $table !== '' ? $table : 'wp_options';
         $results = $wpdb->get_results(
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table identifier from wpdb is restricted to alphanumeric/underscore above; this query has no user-supplied values.
-            "SELECT option_name, LENGTH(option_value) AS bytes, autoload FROM {$table} WHERE option_name LIKE '_transient_%' ORDER BY LENGTH(option_value) DESC LIMIT 50",
+            "SELECT option_name, LENGTH(option_value) AS bytes, autoload, option_value FROM {$table} WHERE option_name LIKE '_transient_%' ORDER BY LENGTH(option_value) DESC LIMIT 50",
             'ARRAY_A',
         );
 
@@ -159,6 +160,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 'name'     => $this->stringValue($row, 'option_name'),
                 'bytes'    => $this->intValue($row, 'bytes'),
                 'autoload' => $this->stringValue($row, 'autoload'),
+                'value'    => $this->stringValue($row, 'option_value'),
             ];
         }
 
@@ -167,7 +169,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
 
     /**
      * @param array<string, mixed> $payload
-     * @return list<array{name: string, bytes: int, type: string}>
+     * @return list<array{name: string, bytes: int, type: string, value: mixed}>
      */
     private function largestAutoloaded(array $payload): array
     {
@@ -188,6 +190,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 'name'  => $this->stringValue($option, 'name'),
                 'bytes' => $this->intValue($option, 'bytes'),
                 'type'  => $this->stringValue($option, 'type'),
+                'value' => $option['value'] ?? null,
             ];
         }
 
@@ -196,7 +199,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
 
     /**
      * @param array<string, mixed> $payload
-     * @return list<array{name: string, bytes: int, autoload: string}>
+     * @return list<array{name: string, bytes: int, autoload: string, value: string}>
      */
     private function transientRows(array $payload): array
     {
@@ -217,6 +220,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 'name'     => $this->stringValue($transient, 'name'),
                 'bytes'    => $this->intValue($transient, 'bytes'),
                 'autoload' => $this->stringValue($transient, 'autoload'),
+                'value'    => $this->stringValue($transient, 'value'),
             ];
         }
 

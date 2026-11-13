@@ -113,7 +113,7 @@ final class ProfilerTest extends TestCase
         $gate = $this->gate($context);
         $http = new ProfilerHttpClientRecorder($gate);
         $http->enable();
-        $http->track(false, [], $url);
+        $http->track(false, ['headers' => ['Authorization' => 'Bearer ' . $secret], 'body' => 'raw-body'], $url);
         $http->record(new \WP_Error('canary', 'Connection failed: ' . $url), 'response', 'test', [], $url);
         $errors = new ProfilerErrorRecorder($gate);
         $errors->enable();
@@ -152,6 +152,7 @@ final class ProfilerTest extends TestCase
             self::assertSame(918273645, $profile->collector('contract')['password']);
             self::assertSame(['token' => 123456789.5, 'secret' => false], $profile->collector('contract')['nested']);
             self::assertSame([true, null, 987654321], $profile->collector('contract')['credential_scalars']);
+            self::assertSame(['headers' => ['Authorization' => 'Bearer ' . $secret], 'body' => 'raw-body'], $profile->collector('http_client')['requests'][0]['args']);
             foreach ([new HttpClientCollector($http), new ExceptionCollector($errors)] as $collector) {
                 self::assertStringContainsString($secret, $collector->renderPanel($profile->collector($collector->getKey()), $profile)->html);
             }
