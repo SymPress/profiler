@@ -53,6 +53,20 @@ final class ProfilerPageRendererTest extends TestCase
         self::assertStringContainsString('Request panel', $html);
     }
 
+    public function testRefererIsOnlyLinkedForWebUrls(): void
+    {
+        $renderer = new ProfilerPageRenderer(new PhpViewRenderer(dirname(__DIR__, 3) . '/views'), new WebProfilerAssets(), new ProfilerUrlGenerator());
+        $render = static fn (string $referer): string => $renderer->renderProfile(
+            new ProfileRecord('token123', '2026-04-20T10:00:00+00:00', ['method' => 'GET'], ['request' => ['referer' => $referer]]),
+            [],
+            [new CollectorPanel('request', 'Request / Response', 'request', '<p>Request panel</p>')],
+            'request',
+        );
+
+        self::assertStringContainsString('href="https://example.test/from"', $render('https://example.test/from'));
+        self::assertStringNotContainsString('javascript:', $render('javascript:alert(1)'));
+    }
+
     public function test_it_renders_search_filters_on_results_page(): void
     {
         $renderer = new ProfilerPageRenderer(
