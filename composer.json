@@ -13,6 +13,7 @@
     "require": {
         "php": "^8.5",
         "ext-json": "*",
+        "symfony/filesystem": "^8.1.11",
         "sympress/kernel": "^1.1.1"
     },
     "require-dev": {
