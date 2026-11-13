@@ -49,6 +49,23 @@ final class ProfileGateTest extends TestCase
         self::assertTrue($gate->shouldInjectToolbar());
     }
 
+    public function testBackgroundNoiseIsNotProfiled(): void
+    {
+        $gate = fn (string $context): ProfileGate => new ProfileGate($this->config(EnvConfig::LOCAL), WpContext::new()->force($context), new ProfilerRequestMatcher());
+
+        $_SERVER['REQUEST_URI'] = '/wp-admin/admin-ajax.php';
+        $_REQUEST = ['action' => 'heartbeat'];
+        self::assertFalse($gate(WpContext::AJAX)->shouldCollect());
+        $_REQUEST = ['action' => 'save_draft'];
+        self::assertTrue($gate(WpContext::AJAX)->shouldCollect());
+        $_REQUEST = [];
+
+        $_SERVER['REQUEST_URI'] = '/favicon.ico?v=2';
+        self::assertFalse($gate(WpContext::FRONTOFFICE)->shouldCollect());
+        $_SERVER['REQUEST_URI'] = '/blog/';
+        self::assertTrue($gate(WpContext::FRONTOFFICE)->shouldCollect());
+    }
+
     public function test_it_does_not_collect_profiles_in_the_backoffice(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
