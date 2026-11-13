@@ -42,18 +42,23 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             'duplicate_queries' => $duplicateRows,
             'caller_breakdown'  => $callerBreakdown,
             'total_duration_ms' => $totalDuration,
+            'profiler_queries'  => $profilerQueries,
         ] = $this->collectQueryData($wpdb);
+        $slowest = $queries;
+        usort($slowest, static fn (array $left, array $right): int => $right['duration_ms'] <=> $left['duration_ms']);
 
         return [
             'enabled'           => defined('SAVEQUERIES') && SAVEQUERIES,
-            'count'             => $numQueries,
+            // The profiler's own collection queries are not the page's queries.
+            'count'             => max(0, $numQueries - $profilerQueries),
             'total_duration_ms' => round($totalDuration, 2),
             'last_error'        => is_object($wpdb) ? $this->stringFromMixed($wpdb->last_error ?? '') : '',
+            // In execution order; the panel's # column is the position in the request.
             'queries'           => array_slice($queries, 0, self::MAX_QUERIES),
-            'slow_queries'      => array_slice($queries, 0, 10),
+            'slow_queries'      => array_slice($slowest, 0, 10),
             'duplicate_queries' => array_slice($duplicateRows, 0, 10),
             'caller_breakdown'  => array_slice($callerBreakdown, 0, 15),
-            'truncated'         => count($queries) === self::MAX_QUERIES,
+            'truncated'         => count($queries) > self::MAX_QUERIES,
             'captured_at'       => $context->finishedAtIso(),
         ];
     }
@@ -206,7 +211,8 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
      *   queries: list<array{sql: string, duration_ms: float, caller: string, started_at: float}>,
      *   duplicate_queries: list<array{count: int, duration_ms: float, sample: string}>,
      *   caller_breakdown: list<array{caller: string, count: int, duration_ms: float}>,
-     *   total_duration_ms: float
+     *   total_duration_ms: float,
+     *   profiler_queries: int
      * }
      */
     // phpcs:ignore SymPress.Functions.FunctionLength.TooLong -- single-pass query aggregation is easier to audit than splitting the request-local state machine further.
@@ -223,10 +229,14 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
                 'duplicate_queries' => [],
                 'caller_breakdown'  => [],
                 'total_duration_ms' => 0.0,
+                'profiler_queries'  => 0,
             ];
         }
 
-        foreach (array_slice($wpdb->queries, 0, self::MAX_QUERIES) as $entry) {
+        $profilerQueries = 0;
+
+        // Totals, duplicates and callers cover every query; only the stored list is capped.
+        foreach ($wpdb->queries as $entry) {
             if (!is_array($entry)) {
                 continue;
             }
@@ -235,7 +245,16 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             $durationMs = round($this->floatFromMixed($entry[1] ?? 0.0) * 1000, 2);
             $caller = $this->stringFromMixed($entry[2] ?? '');
             $startedAt = $this->floatFromMixed($entry[3] ?? 0.0);
-            $normalizedSql = $this->normalizeSql($sql);
+
+            if (str_contains($caller, 'SymPress\\Profiler\\')) {
+                $profilerQueries++;
+
+                continue;
+            }
+
+            // A duplicate is the same statement with the same values. Grouping by query shape reported
+            // 22 lookups of 21 different options as 22 duplicates.
+            $normalizedSql = preg_replace('/\s+/', ' ', trim($sql)) ?? $sql;
             $totalDuration += $durationMs;
 
             $queries[] = [
@@ -247,11 +266,6 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             $this->aggregateDuplicate($duplicates, $normalizedSql, $sql, $durationMs);
             $this->aggregateCaller($callerBreakdown, $caller, $durationMs);
         }
-
-        usort(
-            $queries,
-            static fn (array $left, array $right): int => $right['duration_ms'] <=> $left['duration_ms'],
-        );
 
         $duplicateRows = array_values(array_filter(
             $duplicates,
@@ -271,6 +285,7 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
             'duplicate_queries' => $duplicateRows,
             'caller_breakdown'  => array_slice($callerBreakdown, 0, 15),
             'total_duration_ms' => round($totalDuration, 2),
+            'profiler_queries'  => $profilerQueries,
         ];
     }
 
