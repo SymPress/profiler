@@ -123,9 +123,10 @@ final class Profiler
         $this->htmlBufferStarted = ob_start($this->injectToolbar(...));
     }
 
-    public function captureTemplate(string $template): string
+    public function captureTemplate(mixed $template): mixed
     {
-        $this->template = $template;
+        // Core accepts any value from template_include filters; record strings and pass everything through.
+        $this->template = is_string($template) ? $template : null;
 
         return $template;
     }

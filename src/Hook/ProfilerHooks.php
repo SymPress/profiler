@@ -23,7 +23,7 @@ final class ProfilerHooks
         $this->profiler->beginHtmlBuffer();
     }
 
-    public function captureTemplate(string $template): string
+    public function captureTemplate(mixed $template): mixed
     {
         return $this->profiler->captureTemplate($template);
     }
