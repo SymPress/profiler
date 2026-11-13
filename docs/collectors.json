@@ -135,7 +135,7 @@
       "priority": 70,
       "views": {"toolbar": "none", "panel": true},
       "sources": ["ProfilerErrorRecorder", "sympress_profiler_log_entries filter"],
-      "payload_keys": ["count", "counts", "channels", "entries"],
+      "payload_keys": ["count", "counts", "channels", "entries", "dropped"],
       "sensitive_fields": ["entries.*.message", "entries.*.file", "entries.*.context", "entries.*.extra"]
     },
     {
@@ -170,8 +170,8 @@
       "key": "hooks",
       "priority": 50,
       "views": {"toolbar": "always", "panel": true},
-      "sources": ["global wp_filter", "global wp_actions", "global wp_current_filter"],
-      "payload_keys": ["fired_count", "registered_count", "top_hooks", "called_listeners", "fired_order", "current_stack", "captured_at"],
+      "sources": ["global wp_filter", "global wp_actions", "global wp_filters", "global wp_current_filter"],
+      "payload_keys": ["fired_count", "filter_count", "listener_count", "registered_count", "top_hooks", "called_listeners", "fired_order", "current_stack", "captured_at"],
       "sensitive_fields": ["called_listeners"]
     },
     {
