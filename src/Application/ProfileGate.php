@@ -88,15 +88,11 @@ final class ProfileGate
             return false;
         }
 
+        // Only browser page navigations ask for HTML. fetch, XHR and curl send */*; buffering those would hold
+        // streamed responses and downloads in memory until the request ends.
         $accept = $this->serverValue('HTTP_ACCEPT');
 
-        if ($accept === '') {
-            return true;
-        }
-
-        return str_contains($accept, 'text/html')
-            || str_contains($accept, 'application/xhtml+xml')
-            || str_contains($accept, '*/*');
+        return str_contains($accept, 'text/html') || str_contains($accept, 'application/xhtml+xml');
     }
 
     public function shouldReplaceToolbarAfterAjax(): bool
