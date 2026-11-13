@@ -39,11 +39,12 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
         foreach ($autoloaded as $name => $value) {
             $bytes = strlen($this->serializeValue($value));
             $totalBytes += $bytes;
+            $decoded = $this->decodeValue($value);
             $autoloadRows[] = [
                 'name'  => (string) $name,
                 'bytes' => $bytes,
-                'type'  => get_debug_type($value),
-                'value' => $value,
+                'type'  => get_debug_type($decoded),
+                'value' => $decoded,
             ];
         }
 
@@ -125,7 +126,18 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
         );
     }
 
-    /** @return list<array{name: string, bytes: int, autoload: string, value: string}> */
+    /**
+     * wp_load_alloptions() and the options table hold raw strings: show what get_option() would return.
+     * Objects keep their serialized form, because the stored profile cannot represent them.
+     */
+    private function decodeValue(mixed $value): mixed
+    {
+        $decoded = is_string($value) && function_exists('maybe_unserialize') ? maybe_unserialize($value) : $value;
+
+        return is_object($decoded) ? $value : $decoded;
+    }
+
+    /** @return list<array{name: string, bytes: int, autoload: string, value: mixed}> */
     private function transients(): array
     {
         $wpdb = $GLOBALS['wpdb'] ?? null;
@@ -141,7 +153,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
         $table = $table !== '' ? $table : 'wp_options';
         $results = $wpdb->get_results(
             // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table identifier from wpdb is restricted to alphanumeric/underscore above; this query has no user-supplied values.
-            "SELECT option_name, LENGTH(option_value) AS bytes, autoload, option_value FROM {$table} WHERE option_name LIKE '_transient_%' ORDER BY LENGTH(option_value) DESC LIMIT 50",
+            "SELECT option_name, LENGTH(option_value) AS bytes, autoload, option_value FROM {$table} WHERE (option_name LIKE '\\_transient\\_%' OR option_name LIKE '\\_site\\_transient\\_%') AND option_name NOT LIKE '\\_transient\\_timeout\\_%' AND option_name NOT LIKE '\\_site\\_transient\\_timeout\\_%' ORDER BY LENGTH(option_value) DESC LIMIT 50",
             'ARRAY_A',
         );
 
@@ -160,7 +172,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 'name'     => $this->stringValue($row, 'option_name'),
                 'bytes'    => $this->intValue($row, 'bytes'),
                 'autoload' => $this->stringValue($row, 'autoload'),
-                'value'    => $this->stringValue($row, 'option_value'),
+                'value'    => $this->decodeValue($row['option_value'] ?? ''),
             ];
         }
 
@@ -199,7 +211,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
 
     /**
      * @param array<string, mixed> $payload
-     * @return list<array{name: string, bytes: int, autoload: string, value: string}>
+     * @return list<array{name: string, bytes: int, autoload: string, value: mixed}>
      */
     private function transientRows(array $payload): array
     {
@@ -220,7 +232,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
                 'name'     => $this->stringValue($transient, 'name'),
                 'bytes'    => $this->intValue($transient, 'bytes'),
                 'autoload' => $this->stringValue($transient, 'autoload'),
-                'value'    => $this->stringValue($transient, 'value'),
+                'value'    => $transient['value'] ?? null,
             ];
         }
 
