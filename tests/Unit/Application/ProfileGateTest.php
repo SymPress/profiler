@@ -19,7 +19,13 @@ final class ProfileGateTest extends TestCase
         $_GET = [];
         $_POST = [];
         $_SERVER = [];
-        unset($GLOBALS['profiler_test_logged_in'], $GLOBALS['profiler_test_can_manage']);
+        unset(
+            $GLOBALS['profiler_test_logged_in'],
+            $GLOBALS['profiler_test_can_manage'],
+            $GLOBALS['profiler_test_multisite'],
+            $GLOBALS['profiler_test_super_admin'],
+            $GLOBALS['profiler_test_user_lookups'],
+        );
     }
 
     public function test_it_rejects_anonymous_requests_even_in_local_environment(): void
@@ -160,6 +166,35 @@ final class ProfileGateTest extends TestCase
         );
 
         self::assertTrue($gate->shouldReplaceToolbarAfterAjax());
+    }
+
+    public function testMultisiteRequiresSuperAdmin(): void
+    {
+        $gate = new ProfileGate($this->config(EnvConfig::LOCAL), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+        $GLOBALS['profiler_test_multisite'] = true;
+
+        self::assertFalse($gate->canAccessProfiler());
+        $GLOBALS['profiler_test_super_admin'] = true;
+        self::assertTrue($gate->canAccessProfiler());
+    }
+
+    public function testClosedProductionGateDoesNotResolveTheCurrentUser(): void
+    {
+        $gate = new ProfileGate($this->config(EnvConfig::PRODUCTION), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+
+        self::assertFalse($gate->canAccessProfiler());
+        self::assertFalse($gate->shouldCollect());
+        self::assertArrayNotHasKey('profiler_test_user_lookups', $GLOBALS);
+    }
+
+    public function testOnlyWholePathSegmentsAreProfilerRoutes(): void
+    {
+        $matcher = new ProfilerRequestMatcher();
+
+        foreach (['/_profiler' => true, '/_profiler/abc' => true, '/_wdt/abc' => true, '/_profiler-guide/' => false, '/_wdtx' => false, '/blog/_profiler' => false] as $uri => $expected) {
+            $_SERVER['REQUEST_URI'] = $uri;
+            self::assertSame($expected, $matcher->isInternalProfilerRequest(), $uri);
+        }
     }
 
     public function testUnauthorizedCapabilityCannotCollectOrViewEvenInDevelopment(): void

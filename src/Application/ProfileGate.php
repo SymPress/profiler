@@ -31,8 +31,10 @@ final class ProfileGate
             return false;
         }
 
-        return $this->currentUserCanManageOptions()
-            && ($this->isDevelopmentEnvironment() || $this->canRunOutsideDevelopment());
+        // Environment first: on a closed production site this runs on every request at plugins_loaded -1000,
+        // and resolving the user that early would skip determine_current_user filters plugins add later.
+        return ($this->isDevelopmentEnvironment() || $this->canRunOutsideDevelopment())
+            && $this->currentUserCanManageOptions();
     }
 
     public function shouldCollect(): bool
@@ -203,9 +205,12 @@ final class ProfileGate
             return false;
         }
 
-        return function_exists('is_user_logged_in')
-            && is_user_logged_in()
-            && current_user_can('manage_options');
+        if (!function_exists('is_user_logged_in') || !is_user_logged_in() || !current_user_can('manage_options')) {
+            return false;
+        }
+
+        // One store holds the profiles (cookies included) of every site in the network.
+        return !function_exists('is_multisite') || !is_multisite() || is_super_admin();
     }
 
     private function isProfilerPageRequest(): bool

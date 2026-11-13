@@ -16,15 +16,20 @@ final class ProfilerRequestMatcher
 
     public function isInternalProfilerRequest(): bool
     {
-        $path = $this->path();
-
-        return str_starts_with($path, $this->profilerPrefix)
-            || str_starts_with($path, $this->toolbarPrefix);
+        return $this->isProfilerRequest() || $this->isBelow($this->toolbarPrefix);
     }
 
     public function isProfilerRequest(): bool
     {
-        return str_starts_with($this->path(), $this->profilerPrefix);
+        return $this->isBelow($this->profilerPrefix);
+    }
+
+    /** Whole path segments only: /_profiler-guide/ is a site page, not a profiler route. */
+    private function isBelow(string $prefix): bool
+    {
+        $path = $this->path();
+
+        return $path === $prefix || str_starts_with($path, $prefix . '/');
     }
 
     public function isToolbarRequest(): bool

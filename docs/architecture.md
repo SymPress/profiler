@@ -75,7 +75,8 @@ the same commit.
 ## Authorization and persisted data
 
 Local/development access still requires an authenticated WordPress user with
-`manage_options`. Production additionally requires the explicit
+`manage_options` (on multisite: a super admin, because the store is shared by
+the whole network). Production additionally requires the explicit
 `profiler.enable_outside_development` opt-in; that filter cannot authorize an
 anonymous visitor. Endpoints, toolbar and collection use the same authorization
 boundary. The route hook remains registered to return 403 for denied requests;
