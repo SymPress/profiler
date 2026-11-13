@@ -52,14 +52,14 @@ final class ProfilerLifecycleRecorder
         ];
     }
 
-    public function captureTemplate(string $template): string
+    public function captureTemplate(mixed $template): mixed
     {
         if ($this->enabled) {
             $this->events[] = [
                 'name'       => 'template_include',
                 'started_at' => microtime(true),
                 'memory_mb'  => round(memory_get_usage(true) / 1048576, 2),
-                'detail'     => $template,
+                'detail'     => is_string($template) ? $template : '',
             ];
         }
 

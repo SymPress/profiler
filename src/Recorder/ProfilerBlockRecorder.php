@@ -51,7 +51,7 @@ final class ProfilerBlockRecorder
     }
 
     /** @param array<string, mixed> $parsedBlock */
-    public function finish(string $blockContent, array $parsedBlock = [], mixed $block = null): string
+    public function finish(mixed $blockContent, array $parsedBlock = [], mixed $block = null): mixed
     {
         unset($parsedBlock, $block);
 
@@ -67,7 +67,8 @@ final class ProfilerBlockRecorder
             'duration_ms'  => round((microtime(true) - $event['started_at']) * 1000, 2),
             'memory_mb'    => $event['memory_mb'],
             'depth'        => $event['depth'],
-            'output_bytes' => strlen($blockContent),
+            // Other filters may return a non-string; pass it through untouched like core does.
+            'output_bytes' => is_string($blockContent) ? strlen($blockContent) : 0,
         ];
 
         return $blockContent;
