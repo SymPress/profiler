@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.0 — 2026-11-13
+
+- The profiler is now branded "SymPress Profiler" with its own icon. The header search finds profiles instead of opening symfony.com; "Symfony initialization" and "Symfony Configuration" read "Kernel".
+- Symfony-only tabs without a WordPress data source (Session, Flashes, Database Connections, Entity Managers, Managed Entities, Entities Mapping, Not Called Listeners, Orphaned Events, Translation Fallback/Missing) are shown disabled instead of with invented `0` values; the "Invalid entities" and "Managed entities" tiles and the dead "Group similar statements" link are removed.
+- The profile search form has visible field labels in an even grid.
+
 ## 1.1.5 — 2026-11-13
 
 - Fix table layout in all panels: columns no longer collapse to a few pixels and wrap letter by letter when one cell holds a long value (Events, Options, Assets, Blocks, REST routes, request headers). Short values stay on one line, columns with paths, URLs and dumps give way first, and narrow windows scroll the table inside its box.
