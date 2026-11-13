@@ -72,6 +72,17 @@ final class ProfileGateTest extends TestCase
         self::assertTrue($gate(WpContext::FRONTOFFICE)->shouldCollect());
     }
 
+    public function testToolbarIsOnlyBufferedForHtmlNavigations(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $gate = new ProfileGate($this->config(EnvConfig::LOCAL), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+
+        foreach (['text/html,application/xhtml+xml;q=0.9' => true, 'application/xhtml+xml' => true, '*/*' => false, 'application/json' => false, '' => false] as $accept => $expected) {
+            $_SERVER['HTTP_ACCEPT'] = $accept;
+            self::assertSame($expected, $gate->shouldInjectToolbar(), $accept);
+        }
+    }
+
     public function test_it_does_not_collect_profiles_in_the_backoffice(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
