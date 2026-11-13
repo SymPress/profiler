@@ -253,7 +253,7 @@
       "views": {"toolbar": "always", "panel": true},
       "sources": ["WordPress alloptions", "global wpdb transients"],
       "payload_keys": ["autoload_count", "autoload_bytes", "largest_autoloaded", "transients"],
-      "sensitive_fields": ["largest_autoloaded.*.name", "transients"]
+      "sensitive_fields": ["largest_autoloaded", "transients"]
     },
     {
       "class": "SymPress\\Profiler\\Collector\\PluginThemeCollector",

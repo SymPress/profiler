@@ -107,12 +107,13 @@ final class HttpClientCollector extends AbstractCollector implements DataCollect
                 $this->boolValue($request, 'blocking') ? 'yes' : 'no',
                 $this->floatValue($request, 'timeout'),
                 $this->intValue($request, 'response_size'),
+                is_array($request['args'] ?? null) ? $request['args'] : [],
             ];
         }
 
         $html = Html::section('Overview', $overview);
         $html .= Html::section('Requests', Html::table(
-            ['Method', 'URL', 'Status / Error', 'Duration (ms)', 'Transport', 'Blocking', 'Timeout', 'Bytes'],
+            ['Method', 'URL', 'Status / Error', 'Duration (ms)', 'Transport', 'Blocking', 'Timeout', 'Bytes', 'Request options'],
             $rows,
         ));
 

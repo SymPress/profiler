@@ -40,7 +40,7 @@ final class ProfilerHttpClientRecorder
             'started_at' => microtime(true),
             'method'     => $method,
             'url'        => $url,
-            'args'       => $this->normalizeArgs($parsedArgs),
+            'args'       => $parsedArgs,
         ];
 
         return $preempt;
@@ -81,7 +81,7 @@ final class ProfilerHttpClientRecorder
             'blocking'      => (bool) ($parsedArgs['blocking'] ?? true),
             'timeout'       => is_numeric($parsedArgs['timeout'] ?? null) ? (float) $parsedArgs['timeout'] : 0.0,
             'response_size' => $responseSize,
-            'args'          => $pending['args'] ?? $this->normalizeArgs($parsedArgs),
+            'args'          => $pending['args'] ?? $parsedArgs,
         ];
     }
 
@@ -112,25 +112,6 @@ final class ProfilerHttpClientRecorder
         }
 
         return $entry;
-    }
-
-    /**
-     * @param array<string, mixed> $parsedArgs
-     * @return array<string, mixed>
-     */
-    private function normalizeArgs(array $parsedArgs): array
-    {
-        $normalized = [];
-
-        foreach (['method', 'timeout', 'redirection', 'httpversion', 'blocking'] as $key) {
-            if (!array_key_exists($key, $parsedArgs)) {
-                continue;
-            }
-
-            $normalized[$key] = $parsedArgs[$key];
-        }
-
-        return $normalized;
     }
 
     private function mixedToString(mixed $value): string
