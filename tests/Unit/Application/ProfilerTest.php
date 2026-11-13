@@ -78,6 +78,94 @@ final class ProfilerTest extends TestCase
         ], $storage->saved->collector('contract'));
     }
 
+    public function testFailingCollectorAndStorageNeverBreakTheRequest(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $healthy = $this->collector();
+        $broken = new class implements DataCollectorInterface {
+            public function getKey(): string
+            {
+                return 'broken';
+            }
+
+            public function getLabel(): string
+            {
+                return 'Broken';
+            }
+
+            public function getIcon(): string
+            {
+                return 'debug';
+            }
+
+            public function collect(ProfileContext $context): array
+            {
+                throw new \LogicException('collector exploded');
+            }
+
+            public function createToolbarBlock(array $payload, ProfileRecord $profile): ?ToolbarBlock
+            {
+                throw new \LogicException('toolbar exploded');
+            }
+
+            public function renderPanel(array $payload, ProfileRecord $profile): CollectorPanel
+            {
+                throw new \LogicException('panel exploded');
+            }
+        };
+        $storage = new class implements ProfileStorageInterface {
+            public function save(ProfileRecord $profile): void
+            {
+                throw new \RuntimeException('disk full');
+            }
+
+            public function load(string $token): ?ProfileRecord
+            {
+                return null;
+            }
+
+            public function latest(int $limit = 20): array
+            {
+                return [];
+            }
+
+            public function search(ProfileSearchCriteria $criteria): array
+            {
+                return [];
+            }
+        };
+        $urls = new ProfilerUrlGenerator();
+        $viewBuilder = new ProfileViewBuilder([$broken, $healthy], new ToolbarRenderer(new WebProfilerAssets(), $urls));
+        $context = WpContext::new()->force(WpContext::FRONTOFFICE);
+        $profiler = new Profiler([$broken, $healthy], $this->gate($context), $storage, $viewBuilder, $urls, $context);
+        $errorLog = (string) ini_set('error_log', '/dev/null');
+
+        try {
+            $profiler->start();
+            $profiler->captureTemplate(false);
+            ob_start();
+            $profiler->beginHtmlBuffer();
+            echo '<html><body>page</body></html>';
+            ob_end_flush();
+            $content = (string) ob_get_clean();
+            $profiler->finish();
+        } finally {
+            ini_set('error_log', $errorLog);
+        }
+
+        self::assertStringContainsString('page', $content);
+        self::assertStringContainsString('Cost $1', $content);
+        $profile = new ProfileRecord('t', '2026-11-13T10:00:00+00:00', [], [
+            'broken' => [ProfileViewBuilder::COLLECTOR_ERROR_KEY => ['class' => \LogicException::class, 'message' => 'collector <b>exploded</b>']],
+            'contract' => [],
+        ]);
+        $panels = $viewBuilder->panels($profile);
+        self::assertCount(2, $panels);
+        self::assertStringContainsString('collector &lt;b&gt;exploded&lt;/b&gt;', $panels[0]->html);
+        self::assertStringContainsString('panel exploded', $viewBuilder->panels(new ProfileRecord('t', '2026-11-13T10:00:00+00:00', [], []))[0]->html);
+        self::assertCount(1, $viewBuilder->toolbarBlocks($profile));
+    }
+
     public function testHtmlCallbackPreservesDollarSequencesAndCollectsOnlyOnce(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';

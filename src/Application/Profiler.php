@@ -137,7 +137,13 @@ final class Profiler
             return;
         }
 
-        $this->throwables[] = [
+        $this->throwables[] = $this->throwableSummary($throwable);
+    }
+
+    /** @return array{class: string, message: string, file: string, line: int} */
+    private function throwableSummary(\Throwable $throwable): array
+    {
+        return [
             'class'   => $throwable::class,
             'message' => $throwable->getMessage(),
             'file'    => $throwable->getFile(),
@@ -203,7 +209,14 @@ final class Profiler
         $sanitizer = new ArraySanitizer();
 
         foreach ($this->collectors as $collector) {
-            $collectorPayloads[$collector->getKey()] = $sanitizer->normalizePayload($collector->collect($context));
+            try {
+                $collectorPayloads[$collector->getKey()] = $sanitizer->normalizePayload($collector->collect($context));
+            } catch (\Throwable $throwable) {
+                // A failing collector must not break the page or the other collectors.
+                $collectorPayloads[$collector->getKey()] = [
+                    ProfileViewBuilder::COLLECTOR_ERROR_KEY => $this->throwableSummary($throwable),
+                ];
+            }
         }
 
         $this->profile = new ProfileRecord(
@@ -213,7 +226,13 @@ final class Profiler
             $collectorPayloads,
         );
 
-        $this->storage->save($this->profile);
+        try {
+            $this->storage->save($this->profile);
+        } catch (\Throwable $throwable) {
+            // Profiling runs during shutdown: an unwritable store must not turn into a fatal error.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- the only channel left during shutdown; the page must not fail.
+            error_log(sprintf('Profiler could not store profile %s: %s', $this->token, $throwable->getMessage()));
+        }
 
         $this->finalized = true;
 
