@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.1.3 — 2026-11-13
+
+- Multisite: only super admins can use the profiler, because one store holds the profiles (cookies included) of every site in the network.
+- With the gate closed (production without opt-in) the current user is no longer resolved at `plugins_loaded` priority −1000; the environment is checked first.
+- Define `DONOTCACHEPAGE` on profiled pages and profiler endpoints so page caches that store logged-in responses never keep toolbar or profiler HTML.
+- Match `/_profiler` and `/_wdt` as whole path segments; a site page such as `/_profiler-guide/` is no longer taken over.
+- Link the stored referer in the profile header only when it is an `http(s)` URL.
+
 ## 1.1.2 — 2026-11-13
 
 - Bound disk use: keep at most `profiler.max_profiles` (default 100) newest profiles younger than `profiler.ttl` (default 48 hours) and enforce this on every save instead of a random 1-in-20 sweep. Existing stores are trimmed on the next profiled request.
