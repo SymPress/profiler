@@ -12,6 +12,9 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class CacheCollector extends AbstractCollector implements DataCollectorInterface
 {
+    /** @var array<string, mixed>|null */
+    private ?array $nginxCache = null;
+
     public function getKey(): string
     {
         return 'cache';
@@ -42,7 +45,8 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             'cache_entry_count'     => $this->countCacheEntries($cacheStore),
             'groups'                => $this->cacheGroups($cacheStore),
             'stats'                 => $this->readStats($objectCache),
-            'nginx_cache'           => $this->nginxCacheData(),
+            // Walks up to 10,000 cache files: once per request is enough.
+            'nginx_cache'           => $this->nginxCache ??= $this->nginxCacheData(),
         ];
     }
 
@@ -492,13 +496,16 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
 
     private function serializeValue(mixed $value): string
     {
-        if (function_exists('maybe_serialize')) {
-            $serialized = maybe_serialize($value);
-
-            return is_scalar($serialized) ? (string) $serialized : serialize($serialized);
+        if (is_scalar($value) || $value === null) {
+            return (string) $value;
         }
 
-        return is_scalar($value) || $value === null ? (string) $value : serialize($value);
+        try {
+            // Size estimate only. Closures and some objects cannot be serialized; count them as empty.
+            return serialize($value);
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     /**

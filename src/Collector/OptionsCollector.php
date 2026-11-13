@@ -12,6 +12,9 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class OptionsCollector extends AbstractCollector implements DataCollectorInterface
 {
+    /** @var array<string, mixed>|null Site state: identical in the provisional and the final collection pass. */
+    private ?array $payload = null;
+
     public function getKey(): string
     {
         return 'options';
@@ -50,7 +53,7 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
 
         usort($autoloadRows, static fn (array $left, array $right): int => $right['bytes'] <=> $left['bytes']);
 
-        return [
+        return $this->payload ??= [
             'autoload_count'     => count($autoloaded),
             'autoload_bytes'     => $totalBytes,
             'largest_autoloaded' => array_slice($autoloadRows, 0, 50),
