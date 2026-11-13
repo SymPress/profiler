@@ -6,6 +6,7 @@ namespace SymPress\Profiler\Tests\Unit\Support;
 
 use PHPUnit\Framework\TestCase;
 use SymPress\Profiler\Support\Html;
+use SymPress\Profiler\View\WebProfilerAssets;
 
 final class HtmlTest extends TestCase
 {
@@ -29,5 +30,14 @@ final class HtmlTest extends TestCase
         self::assertStringContainsString(htmlspecialchars($long, ENT_QUOTES), $html);
         self::assertStringNotContainsString('<b>', $html);
         self::assertSame('<span class="sf-dump-str">"short"</span>', Html::dumpValue('short')->html);
+    }
+
+    public function testFontResolvesWithoutFileExtensionInTheUrl(): void
+    {
+        $assets = new WebProfilerAssets();
+
+        self::assertNotNull($assets->fontPath('JetBrainsMono'));
+        self::assertSame($assets->fontPath('JetBrainsMono'), $assets->fontPath('JetBrainsMono.woff2'));
+        self::assertNull($assets->fontPath('../../wp-config'));
     }
 }
