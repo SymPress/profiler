@@ -11,6 +11,7 @@ use SymPress\Kernel\SiteConfig;
 use SymPress\Kernel\WpContext;
 use SymPress\Profiler\Application\ProfileGate;
 use SymPress\Profiler\Application\ProfilerRequestMatcher;
+use SymPress\Profiler\Collector\AssetCollector;
 use SymPress\Profiler\Collector\CacheCollector;
 use SymPress\Profiler\Collector\CronCollector;
 use SymPress\Profiler\Collector\DatabaseCollector;
@@ -138,6 +139,41 @@ final class CollectorDataTest extends TestCase
         unset($GLOBALS['profiler_test_current_filter']);
 
         self::assertSame(['plugins_loaded', 'parse_query', 'wp'], array_column($recorder->events(), 'name'));
+    }
+
+    public function testScriptModulesListEnqueuedModulesAndTheirImports(): void
+    {
+        $GLOBALS['profiler_test_script_modules'] = new class {
+            /** @var array<string, array{src: string, version: string|false|null, dependencies: list<array{id: string, import: string}>}> */
+            private array $registered = [
+                '@wordpress/interactivity' => ['src' => '/interactivity.js', 'version' => false, 'dependencies' => []],
+                '@wordpress/block-library/navigation/view' => ['src' => '/navigation.js', 'version' => 'abc', 'dependencies' => [['id' => '@wordpress/interactivity', 'import' => 'static']]],
+                '@wordpress/a11y' => ['src' => '/a11y.js', 'version' => null, 'dependencies' => []],
+            ];
+
+            /** @return list<string> */
+            public function get_queue(): array
+            {
+                return ['@wordpress/block-library/navigation/view'];
+            }
+
+            /** @return array<string, mixed>|null */
+            public function get_registered(string $id): ?array
+            {
+                return $this->registered[$id] ?? null;
+            }
+        };
+
+        try {
+            $modules = (new AssetCollector())->collect($this->context())['script_modules'];
+        } finally {
+            unset($GLOBALS['profiler_test_script_modules']);
+        }
+
+        self::assertSame([
+            ['id' => '@wordpress/block-library/navigation/view', 'src' => '/navigation.js', 'version' => 'abc', 'dependencies' => ['@wordpress/interactivity'], 'enqueued' => true],
+            ['id' => '@wordpress/interactivity', 'src' => '/interactivity.js', 'version' => '6.8.0', 'dependencies' => [], 'enqueued' => false],
+        ], $modules);
     }
 
     private function gate(): ProfileGate
