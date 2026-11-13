@@ -13,7 +13,8 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class HookCollector extends AbstractCollector implements DataCollectorInterface
 {
-    private const int MAX_HOOKS = 100;
+    private const int MAX_HOOKS = 500;
+    private const int MAX_LISTENERS = 1000;
 
     public function getKey(): string
     {
@@ -86,6 +87,9 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
 
         return [
             'fired_count'      => count((array) ($GLOBALS['wp_actions'] ?? [])),
+            // $wp_actions holds actions only; applied filters are counted in $wp_filters.
+            'filter_count'     => count((array) ($GLOBALS['wp_filters'] ?? [])),
+            'listener_count'   => array_sum(array_column($actions, 'listeners')),
             'registered_count' => count($registeredHooks),
             'top_hooks'        => array_slice($actions, 0, self::MAX_HOOKS),
             'called_listeners' => $this->calledListeners($registeredHooks),
@@ -150,6 +154,19 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
             ['label' => 'Orphaned Events', 'disabled' => true],
         ]);
         $html .= '<div id="hooks-called-listeners" class="profiler-tab-target">';
+        $html .= Html::metricTiles([
+            ['label' => 'Fired actions', 'value' => (string) $this->intValue($payload, 'fired_count')],
+            ['label' => 'Applied filters', 'value' => (string) $this->intValue($payload, 'filter_count')],
+            ['label' => 'Registered hooks', 'value' => (string) $this->intValue($payload, 'registered_count')],
+        ]);
+
+        if (count($listenerRows) < $this->intValue($payload, 'listener_count')) {
+            $html .= sprintf(
+                '<p class="help">Showing the first %d of %d listeners registered on fired actions, in firing order.</p>',
+                count($listenerRows),
+                $this->intValue($payload, 'listener_count'),
+            );
+        }
         $html .= Html::section('Listener Details', Html::table(['Hook', 'Priority', 'Callback', 'Origin', 'File'], $listenerRows));
         $html .= Html::section('Fired Hook Summary', Html::table(['Priority', 'Listener'], $rows));
         $html .= '</div>';
@@ -201,7 +218,7 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
                         'file'     => $file,
                     ];
 
-                    if (count($rows) >= 250) {
+                    if (count($rows) >= self::MAX_LISTENERS) {
                         return $rows;
                     }
                 }
