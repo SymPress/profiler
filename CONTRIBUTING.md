@@ -25,4 +25,4 @@ SymPress coding standards.
 - Prefer small, explicit services that fit the existing package structure.
 - Keep WordPress integration behind hooks, context objects, or collectors.
 - Escape output in view templates unless the value is already trusted HTML.
-- Avoid collecting sensitive data unless it is sanitized or summarized.
+- Collected data is shown verbatim without redaction; keep profiler access gated.

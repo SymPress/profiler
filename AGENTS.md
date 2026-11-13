@@ -16,7 +16,7 @@
 
 ## Invariants
 
-- Never collect raw secrets when a summary or sanitized value suffices; keep profiler access gated.
+- Profiles show raw values without redaction, so keep profiler access gated to authorized users in development environments.
 - Escape view output unless it is an explicitly trusted `HtmlString`.
 - Collector keys are stable persisted-profile API. Keep them unique and synchronized with `docs/collectors.json`.
 - `sympress_profiler_log_entries` is the log payload contract with `sympress/monolog-bundle`.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "persistence_redaction": "All collector payloads cross ArraySanitizer::redactPayload before JSON storage and views, including HTTP/error/throwable messages, extension credentials, custom WordPress cookie constants and PHP sessions; ordinary array sizes, nesting and message lengths are preserved.",
+  "persistence_normalization": "All collector payloads cross ArraySanitizer::normalizePayload before JSON storage and views. Values are stored verbatim without redaction; only objects, resources and nesting beyond 64 levels are replaced by placeholders.",
   "hook_services": [
     {
       "class": "SymPress\\Profiler\\Hook\\GatedHooksBootstrap",
