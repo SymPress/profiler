@@ -8,7 +8,9 @@ where applicable.
 
 ## 1.0.8 — 2026-11-13
 
-- Show collected diagnostics verbatim instead of `[redacted]` placeholders. The key-based redaction also masked harmless values such as the WordPress version (`wordpress_` prefix) or any key containing `key`, `session` or `token`. Cookies, authorization headers, request parameters, URLs and credential-like payload fields are now stored and shown as collected; profiler access stays limited to `manage_options` users in local/development environments unless `profiler.enable_outside_development` is enabled.
+- Show collected diagnostics verbatim instead of `[redacted]` placeholders. The key-based redaction also masked harmless values such as the WordPress version (`wordpress_` prefix) or any key containing `key`, `session` or `token`. Cookies, authorization headers, request parameters, URLs and credential-like payload fields are now stored and shown as collected.
+- Show the full `$_SERVER` array (including environment variables) instead of eight allowlisted keys, keep request input, headers and log context without the 500-character/50-item/depth-4 truncation, and stop passing request values such as the URI, referer, user agent, AJAX action and REST route through `sanitize_text_field()`, which removed percent-encoded characters, tags and whitespace.
+- Profiler access is unchanged: it stays limited to `manage_options` users in local/development environments unless `profiler.enable_outside_development` is enabled.
 
 ## 1.0.7 — 2026-11-06
 
