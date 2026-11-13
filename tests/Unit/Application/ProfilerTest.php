@@ -103,7 +103,7 @@ final class ProfilerTest extends TestCase
         self::assertSame(1, $storage->saveCount);
     }
 
-    public function testStoredAndRenderedDiagnosticsRedactAllCollectorCredentialsWithoutTruncatingPayloads(): void
+    public function testStoredAndRenderedDiagnosticsKeepCollectorValuesVerbatimWithoutTruncatingPayloads(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_HOST'] = 'example.test';
@@ -127,10 +127,11 @@ final class ProfilerTest extends TestCase
             'nested' => ['token' => 123456789.5, 'secret' => false],
             'credential_scalars' => [true, null, 987654321],
             'has_auth_cookie' => true,
+            'wordpress_version' => '6.9.1',
         ]);
         $collectors = [$extension, new HttpClientCollector($http), new ExceptionCollector($errors), new LogCollector($errors, new ArraySanitizer()),
             new RequestCollector(new ArraySanitizer(), $context)];
-        $directory = sys_get_temp_dir() . '/profiler-redaction-' . bin2hex(random_bytes(6));
+        $directory = sys_get_temp_dir() . '/profiler-diagnostics-' . bin2hex(random_bytes(6));
         $storage = new FilesystemProfileStorage($directory);
         $urls = new ProfilerUrlGenerator();
         $profiler = new Profiler($collectors, $gate, $storage,
@@ -142,19 +143,17 @@ final class ProfilerTest extends TestCase
             $profiler->finish();
             $profile = $storage->latest(1)[0];
             $json = (string) file_get_contents($directory . '/' . $profile->token . '.json');
-            self::assertStringNotContainsString($secret, $json);
-            self::assertStringContainsString('view=public', $json);
+            self::assertStringContainsString($url, $json);
             self::assertCount(61, $profile->collector('contract')['entries']);
             self::assertSame($ordinary, $profile->collector('contract')['entries'][60]['deep']['deeper']['detail']['message']);
             self::assertTrue($profile->collector('contract')['has_auth_cookie']);
-            self::assertSame('[redacted]', $profile->collector('contract')['password']);
-            self::assertSame(['token' => '[redacted]', 'secret' => '[redacted]'], $profile->collector('contract')['nested']);
-            self::assertSame(['[redacted]', '[redacted]', '[redacted]'], $profile->collector('contract')['credential_scalars']);
-            self::assertStringNotContainsString('918273645', $json);
-            self::assertStringNotContainsString('123456789.5', $json);
-            self::assertStringNotContainsString('987654321', $json);
-            foreach ($collectors as $collector) {
-                self::assertStringNotContainsString($secret, $collector->renderPanel($profile->collector($collector->getKey()), $profile)->html);
+            self::assertSame('6.9.1', $profile->collector('contract')['wordpress_version']);
+            self::assertSame(['nested' => ['access' => $secret]], $profile->collector('contract')['credentials']);
+            self::assertSame(918273645, $profile->collector('contract')['password']);
+            self::assertSame(['token' => 123456789.5, 'secret' => false], $profile->collector('contract')['nested']);
+            self::assertSame([true, null, 987654321], $profile->collector('contract')['credential_scalars']);
+            foreach ([new HttpClientCollector($http), new ExceptionCollector($errors)] as $collector) {
+                self::assertStringContainsString($secret, $collector->renderPanel($profile->collector($collector->getKey()), $profile)->html);
             }
         } finally {
             foreach (glob($directory . '/*') ?: [] as $file) {

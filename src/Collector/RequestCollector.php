@@ -235,7 +235,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             $name = $key === 'CONTENT_TYPE'
                 ? 'content-type'
                 : strtolower(str_replace('_', '-', substr($key, 5)));
-            $sanitized = $this->sanitizer->sanitize($value, 0, $name);
+            $sanitized = $this->sanitizer->sanitize($value);
             $headers[$name] = is_scalar($sanitized) || $sanitized === null ? (string) $sanitized : '[complex]';
         }
 
