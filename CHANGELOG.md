@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.1 — 2026-11-13
+
+- REST / AJAX: no longer build the REST server during collection. That fired `rest_api_init` for every plugin on page and AJAX requests and made the kernel report AJAX requests as `rest` (11 of 13 stored admin-ajax profiles). Routes are listed on REST requests, all of them instead of the first 120.
+- Response headers sent more than once (`Link`, `Set-Cookie`, `Vary`) keep every value; `ProfileContext::responseHeaders()` returns a list for those.
+- Request headers come from the server API where available, so `HTTP_*` environment variables (ddev's `HTTP_EXPOSE`) are not listed as headers and `Content-Length` is.
+- Cron: next run is shown in the site timezone with its abbreviation (it was unlabelled UTC); single events are named `single`.
+- Cache: `global_groups` lists group names (it was a list of `true`) and the Global column is correct.
+- Options: values and types are those `get_option()` returns instead of raw serialized strings; large arrays start collapsed. The transient list includes site transients, excludes `_transient_timeout_*` rows and no longer scans the whole options table through an unescaped `_` wildcard.
+
 ## 1.2.0 — 2026-11-13
 
 - The profiler is now branded "SymPress Profiler" with its own icon. The header search finds profiles instead of opening symfony.com; "Symfony initialization" and "Symfony Configuration" read "Kernel".
