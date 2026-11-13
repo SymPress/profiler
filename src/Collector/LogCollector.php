@@ -258,7 +258,7 @@ final class LogCollector extends AbstractCollector implements DataCollectorInter
     {
         $value = $entry[$key] ?? null;
 
-        return is_array($value) ? $this->sanitizer->sanitizeArray($value) : [];
+        return is_array($value) ? $this->sanitizer->normalizePayload($value) : [];
     }
 
     /** @param array<array-key, mixed> $entry */

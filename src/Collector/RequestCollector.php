@@ -43,11 +43,11 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
 
         return [
             'method'                => $requestMethod,
-            'uri'                   => $this->sanitizer->sanitize($requestUri),
-            'url'                   => $this->sanitizer->sanitize($this->currentUrl()),
+            'uri'                   => $requestUri,
+            'url'                   => $this->currentUrl(),
             'ip'                    => $this->serverValue('REMOTE_ADDR'),
             'user_agent'            => $this->serverValue('HTTP_USER_AGENT'),
-            'referer'               => $this->sanitizer->sanitize($this->serverValue('HTTP_REFERER')),
+            'referer'               => $this->serverValue('HTTP_REFERER'),
             'content_type'          => $this->serverValue('CONTENT_TYPE'),
             'context'               => $this->contextLabel(),
             'context_flags'         => $this->contextFlags(),
@@ -60,7 +60,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             'peak_memory_mb'        => $context->peakMemoryMb(),
             'template'              => $context->template(),
             'request_headers'       => $this->requestHeaders(),
-            'response_headers'      => $this->sanitizer->sanitizeArray($responseHeaders),
+            'response_headers'      => $this->sanitizer->normalizePayload($responseHeaders),
             'response_content_type' => $responseHeaders['content-type'] ?? '',
             // phpcs:disable WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing
             'query'                 => $this->requestArray($_GET),
@@ -227,16 +227,15 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     {
         $headers = [];
 
-        foreach ($_SERVER as $key => $value) {
-            if (!is_string($key) || (!str_starts_with($key, 'HTTP_') && $key !== 'CONTENT_TYPE')) {
+        foreach ($this->serverParameters() as $key => $value) {
+            if (!str_starts_with($key, 'HTTP_') && $key !== 'CONTENT_TYPE') {
                 continue;
             }
 
             $name = $key === 'CONTENT_TYPE'
                 ? 'content-type'
                 : strtolower(str_replace('_', '-', substr($key, 5)));
-            $sanitized = $this->sanitizer->sanitize($value);
-            $headers[$name] = is_scalar($sanitized) || $sanitized === null ? (string) $sanitized : '[complex]';
+            $headers[$name] = is_scalar($value) || $value === null ? (string) $value : '[complex]';
         }
 
         return $headers;
@@ -252,24 +251,16 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             return [];
         }
 
-        return $this->sanitizer->sanitizeArray($files);
+        return $this->sanitizer->normalizePayload($files);
     }
 
     /** @return array<string, mixed> */
     private function serverParameters(): array
     {
-        $server = [];
-
-        foreach (['REQUEST_METHOD', 'SERVER_PROTOCOL', 'SERVER_NAME', 'SERVER_PORT', 'HTTPS', 'REMOTE_ADDR', 'CONTENT_TYPE', 'CONTENT_LENGTH'] as $key) {
-            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- allowlisted diagnostic fields are sanitized below.
-            $value = $_SERVER[$key] ?? null;
-            $server[$key] = $value;
-        }
-
-        $sanitized = $this->sanitizer->sanitizeArray($server);
         $normalized = [];
 
-        foreach ($sanitized as $key => $value) {
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- raw value is intentional: the profiler shows request data verbatim and views escape output.
+        foreach ($this->requestArray($_SERVER) as $key => $value) {
             $normalized[(string) $key] = $value;
         }
 
@@ -375,7 +366,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     {
         $unslashed = function_exists('wp_unslash') ? wp_unslash($source) : $source;
 
-        return $this->sanitizer->sanitizeArray($unslashed);
+        return $this->sanitizer->normalizePayload($unslashed);
     }
 
     private function serverValue(string $key, string $default = ''): string
@@ -384,7 +375,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             return $default;
         }
 
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- sanitized centrally below.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- raw value is intentional: the profiler shows request data verbatim and views escape output.
         $value = $_SERVER[$key];
 
         if (!is_scalar($value) && !$value instanceof \Stringable) {
@@ -392,11 +383,8 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         }
 
         $string = (string) $value;
-        $unslashed = function_exists('wp_unslash') ? wp_unslash($string) : $string;
 
-        return function_exists('sanitize_text_field')
-            ? sanitize_text_field($unslashed)
-            : $unslashed;
+        return function_exists('wp_unslash') ? wp_unslash($string) : $string;
     }
 
     /**
