@@ -34,7 +34,7 @@ final class ProfilerPageRenderer
                     'home_url'      => $this->urls->home(),
                     'search_url'    => $this->urls->search(),
                     'search_query'  => '',
-                    'profiler_icon' => $this->assets->icon('symfony'),
+                    'profiler_icon' => $this->assets->icon('profiler'),
                 ]),
                 'summary_html'  => $this->views->render('profiler/summary', [
                     'profile'       => $profile,
@@ -227,7 +227,7 @@ final class ProfilerPageRenderer
             'home_url'      => $this->urls->home(),
             'search_url'    => $this->urls->search(),
             'search_query'  => $searchQuery,
-            'profiler_icon' => $this->assets->icon('symfony'),
+            'profiler_icon' => $this->assets->icon('profiler'),
         ]);
     }
 

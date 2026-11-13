@@ -47,7 +47,9 @@ final class ProfilerPageRendererTest extends TestCase
             'request',
         );
 
-        self::assertStringContainsString('Symfony Profiler', $html);
+        self::assertStringContainsString('SymPress Profiler', $html);
+        self::assertStringNotContainsString('symfony.com', $html);
+        self::assertStringContainsString('placeholder="search profiles"', $html);
         self::assertStringContainsString('Search profiles', $html);
         self::assertStringNotContainsString('Last 10', $html);
         self::assertStringContainsString('Request panel', $html);

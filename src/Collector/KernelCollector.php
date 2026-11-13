@@ -113,7 +113,7 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
             $runner = 'WordPress Kernel';
         }
 
-        $html = '<h2>Symfony Configuration</h2>';
+        $html = '<h2>Kernel Configuration</h2>';
         $html .= Html::metricTiles([
             ['label' => 'Runner', 'value' => $runner],
         ]);
