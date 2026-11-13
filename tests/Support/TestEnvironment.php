@@ -195,3 +195,42 @@ if (!function_exists('is_wp_error')) {
         return $value instanceof WP_Error;
     }
 }
+
+if (!function_exists('rest_get_server')) {
+    function rest_get_server(): object
+    {
+        $GLOBALS['profiler_test_rest_server_built'] = true;
+
+        return new stdClass();
+    }
+}
+
+if (!function_exists('_get_cron_array')) {
+    /** @return array<array-key, mixed> */
+    function _get_cron_array(): array
+    {
+        return $GLOBALS['profiler_test_cron'] ?? [];
+    }
+}
+
+if (!function_exists('wp_date')) {
+    function wp_date(string $format, int $timestamp): string
+    {
+        return (new DateTimeImmutable('@' . $timestamp))->setTimezone(new DateTimeZone('Europe/Berlin'))->format($format);
+    }
+}
+
+if (!function_exists('wp_load_alloptions')) {
+    /** @return array<string, mixed> */
+    function wp_load_alloptions(): array
+    {
+        return $GLOBALS['profiler_test_alloptions'] ?? [];
+    }
+}
+
+if (!function_exists('maybe_unserialize')) {
+    function maybe_unserialize(mixed $value): mixed
+    {
+        return is_string($value) && preg_match('/^[aOs]:\d+:/', $value) === 1 ? unserialize($value) : $value;
+    }
+}
