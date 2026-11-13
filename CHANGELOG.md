@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.1.1 — 2026-11-13
+
+- A failing collector or an unwritable profile store no longer breaks the profiled page: the collector's panel shows the error, the other collectors are kept, and storage failures are logged.
+- Keep profiles that contain invalid UTF-8, `NAN` or `INF` (e.g. `/?x=%FF`, binary option values) instead of losing the profile and the toolbar.
+- Work on musl-based images (Alpine), where `GLOB_BRACE` is undefined.
+- Pass non-string `template_include` and `render_block` filter values through instead of failing with a `TypeError`.
+
 ## 1.1.0 — 2026-11-13
 
 - Show option values in the Options panel (largest autoloaded options and transients) instead of names and sizes only.
