@@ -8,12 +8,13 @@ delegate to `ProfilerHooks`, which keeps the application lifecycle in
 
 | Hook | Method | Contract |
 |---|---|---|
-| `plugins_loaded` at -1000 | `GatedHooksBootstrap::register` | After pluggables load, authenticate and require `manage_options`; register collection hooks only when the gate opens. |
+| `muplugins_loaded` at -1000 | `GatedHooksBootstrap::captureEarlyErrors` | When the environment allows profiling, start recording PHP errors before plugins load; the gate cannot decide yet because no user is known. |
+| `plugins_loaded` at -1000 | `GatedHooksBootstrap::register` | After pluggables load, authenticate and require `manage_options`; register collection hooks only when the gate opens, otherwise drop the early error buffer. |
 | `plugins_loaded` at 25 | `start` | Initialize timing/token and emit debug headers for authorized requests. |
-| `template_redirect` at -1000 | `beginFrontendBuffer` | Start toolbar buffering only for accessible HTML GET requests. |
+| `template_redirect` at -1000 | `beginFrontendBuffer` | Start toolbar buffering only for accessible GET page navigations (`Accept` names HTML). |
 | `template_include` at 1000 | `captureTemplate` | Preserve and record the selected template path. |
 | `kernel.error` (`App::ACTION_ERROR`) | `recordThrowable` | Add a normalized throwable summary to the request context. |
-| `shutdown` at 999999 | `finish` | Collect once, persist the profile, and finalize it. |
+| `shutdown` at 999999 | `finish` | Collect again (the buffer-time profile is provisional), persist the profile, and finalize it. |
 
 `ProfilerRouteHooks` handles `/_profiler` and `/_wdt` endpoints on `init` before
 normal application routing.

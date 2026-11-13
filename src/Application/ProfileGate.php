@@ -27,14 +27,16 @@ final class ProfileGate
 
     public function canAccessProfiler(): bool
     {
-        if ($this->context->isWpCli()) {
-            return false;
-        }
-
         // Environment first: on a closed production site this runs on every request at plugins_loaded -1000,
         // and resolving the user that early would skip determine_current_user filters plugins add later.
-        return ($this->isDevelopmentEnvironment() || $this->canRunOutsideDevelopment())
-            && $this->currentUserCanManageOptions();
+        return $this->environmentAllowsProfiling() && $this->currentUserCanManageOptions();
+    }
+
+    /** The part of the gate that is known before plugins load: no current user is involved. */
+    public function environmentAllowsProfiling(): bool
+    {
+        return !$this->context->isWpCli()
+            && ($this->isDevelopmentEnvironment() || $this->canRunOutsideDevelopment());
     }
 
     public function shouldCollect(): bool

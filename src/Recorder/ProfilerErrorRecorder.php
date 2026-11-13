@@ -13,10 +13,13 @@ final class ProfilerErrorRecorder
     private const int MAX_ENTRIES = 500;
 
     private bool $enabled = false;
+    private bool $capturing = false;
     private int $dropped = 0;
 
     /** @var callable|null */
     private mixed $previousHandler = null;
+
+    private ?\Closure $handler = null;
 
     /** @var list<array{type: int, label: string, level: string, message: string, file: string, line: int, captured_at: string}> */
     private array $entries = [];
@@ -36,8 +39,62 @@ final class ProfilerErrorRecorder
         }
 
         $this->enabled = true;
+        $this->capture();
+    }
+
+    /**
+     * Starts recording before plugins load, when the environment allows profiling but the gate cannot
+     * decide yet (it needs the current user). stopEarly() drops the buffer if the gate stays closed.
+     */
+    public function startEarly(): void
+    {
+        $this->capture();
+    }
+
+    public function stopEarly(): void
+    {
+        if ($this->enabled) {
+            return;
+        }
+
+        $this->entries = [];
+        $this->dropped = 0;
+        $this->uninstall();
+    }
+
+    private function capture(): void
+    {
+        if ($this->capturing) {
+            return;
+        }
+
+        $this->capturing = true;
+
+        // The kernel boots before any handler can be installed: keep the last error PHP saw until now.
+        $last = error_get_last();
+
+        if (is_array($last) && !$this->isFatal($last['type'])) {
+            $this->store($last['type'], $last['message'], $last['file'], $last['line']);
+        }
+
+        $this->handler = $this->record(...);
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- profiler-only runtime recorder for request-scoped log capture.
-        $this->previousHandler = set_error_handler($this->record(...));
+        $this->previousHandler = set_error_handler($this->handler);
+    }
+
+    private function uninstall(): void
+    {
+        $this->capturing = false;
+        // Peek at the active handler: restoring blindly would remove one a plugin installed after ours.
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- read-only peek, restored on the next line.
+        $active = set_error_handler(null);
+        restore_error_handler();
+
+        if ($active !== $this->handler) {
+            return;
+        }
+
+        restore_error_handler();
     }
 
     public function captureShutdown(): void
@@ -57,27 +114,32 @@ final class ProfilerErrorRecorder
             );
         }
 
-        restore_error_handler();
-        $this->enabled = false;
+        $this->uninstall();
     }
 
     public function record(int $severity, string $message, string $file = '', int $line = 0): bool
     {
-        // Errors silenced with @ or excluded by error_reporting() are not log entries.
+        // Errors silenced with @ are not log entries, except deprecations: libraries trigger those with
+        // @trigger_error() so they stay quiet in production and show up in the profiler, as in Symfony.
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting, WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_error_reporting -- reads the level, changes nothing.
-        if ($this->enabled && (error_reporting() & $severity) !== 0) {
-            // A deprecation inside a loop must not grow the profile without limit.
-            if (count($this->entries) < self::MAX_ENTRIES) {
-                $this->entries[] = $this->normalizeEntry($severity, $message, $file, $line);
-            } else {
-                $this->dropped++;
-            }
+        if ($this->capturing && ((error_reporting() & $severity) !== 0 || in_array($severity, [E_DEPRECATED, E_USER_DEPRECATED], true))) {
+            $this->store($severity, $message, $file, $line);
         }
 
         // Keep the handler that was installed before the profiler (Sentry, Query Monitor) working.
         return is_callable($this->previousHandler)
             ? ($this->previousHandler)($severity, $message, $file, $line) === true
             : false;
+    }
+
+    private function store(int $severity, string $message, string $file, int $line): void
+    {
+        // A deprecation inside a loop must not grow the profile without limit.
+        if (count($this->entries) < self::MAX_ENTRIES) {
+            $this->entries[] = $this->normalizeEntry($severity, $message, $file, $line);
+        } else {
+            $this->dropped++;
+        }
     }
 
     /** Entries not stored because the per-request limit was reached. */
@@ -108,7 +170,7 @@ final class ProfilerErrorRecorder
             'message'     => $message,
             'file'        => $file,
             'line'        => $line,
-            'captured_at' => gmdate(DATE_ATOM),
+            'captured_at' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_RFC3339_EXTENDED),
         ];
     }
 

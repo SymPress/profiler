@@ -12,6 +12,7 @@ use SymPress\Kernel\Hook\HookLoader;
 use SymPress\Profiler\Application\ProfileGate;
 use SymPress\Profiler\Application\ProfilerRequestMatcher;
 use SymPress\Profiler\Hook\GatedHooksBootstrap;
+use SymPress\Profiler\Recorder\ProfilerErrorRecorder;
 use SymPress\Profiler\DependencyInjection\GatedHooksPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
@@ -31,7 +32,7 @@ final class GatedHooksTest extends TestCase
         $container->compile();
         $loader = $container->get('profiler.hook_loader');
         self::assertInstanceOf(HookLoader::class, $loader);
-        $bootstrap = new GatedHooksBootstrap($gate, $loader);
+        $bootstrap = new GatedHooksBootstrap($gate, $loader, new ProfilerErrorRecorder($gate));
         try {
             $GLOBALS['profiler_test_logged_in'] = false;
             $bootstrap->register();

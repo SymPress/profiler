@@ -107,6 +107,33 @@ final class LogCollectorTest extends TestCase
         self::assertNotContains('silenced', array_column($recorder->entries(), 'message'));
     }
 
+    public function testErrorsRaisedBeforeTheGateOpensAreKeptOnlyWhenItOpens(): void
+    {
+        $errorReporting = error_reporting(E_ALL);
+        set_error_handler(static fn (): bool => true);
+        $open = new ProfilerErrorRecorder($this->gate());
+        $closed = new ProfilerErrorRecorder($this->gate());
+
+        try {
+            $open->startEarly();
+            $closed->startEarly();
+            trigger_error('while plugins load', E_USER_WARNING);
+            @trigger_error('silenced deprecation', E_USER_DEPRECATED);
+            @trigger_error('silenced warning', E_USER_WARNING);
+            $closed->stopEarly();
+            $open->enable();
+            trigger_error('after the gate opened', E_USER_NOTICE);
+        } finally {
+            $open->captureShutdown();
+            restore_error_handler();
+            error_reporting($errorReporting);
+        }
+
+        self::assertSame(['while plugins load', 'silenced deprecation', 'after the gate opened'], array_column($open->entries(), 'message'));
+        // PHPUnit (failOnRisky) also verifies that both recorders removed exactly their own handlers.
+        self::assertSame([], $closed->entries());
+    }
+
     private function gate(): ProfileGate
     {
         $locations = $this->createStub(Locations::class);
