@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.2.4 — 2026-11-13
+
+- Events: applied filters are counted next to fired actions (`$wp_actions` holds actions only). The listener list holds up to 1000 entries instead of 250, which ended inside `init` and never reached `wp_head` or `wp_footer`; hook lists hold 500 instead of 100. The panel says when a list is cut.
+- Logs: the error recorder calls the error handler that was installed before it (Sentry, Query Monitor) instead of replacing it, ignores errors silenced with `@` or excluded by `error_reporting()`, and stores at most 500 entries per request, reporting how many were dropped.
+
 ## 1.2.3 — 2026-11-13
 
 - Database: queries are listed in execution order (they were sorted by duration, so `#` was a rank). "Duplicate queries" are identical statements; grouping by query shape reported 22 lookups of 21 different options as 22 duplicates. Totals, duplicates and callers cover all queries, not only the first 150 stored. The profiler's own collection queries are excluded from the list and the count.
