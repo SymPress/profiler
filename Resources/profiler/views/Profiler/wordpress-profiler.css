@@ -339,3 +339,16 @@
 #collector-content .table-with-search-field > table {
     margin: 0;
 }
+
+/* Sidebar: a long label gives way to its badge instead of pushing it out of the entry. */
+#menu-profiler li a .label strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#menu-profiler li a .count {
+    flex-shrink: 0;
+    margin-left: 6px;
+}
