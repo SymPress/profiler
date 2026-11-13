@@ -406,7 +406,7 @@ final class Profiler
         return $object->{$property};
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, string|list<string>> */
     private function headerMap(): array
     {
         $headers = [];
@@ -419,7 +419,10 @@ final class Profiler
                 continue;
             }
 
-            $headers[$normalizedName] = trim($value);
+            // A response can repeat a header (Link, Set-Cookie, Vary): keep every value.
+            $headers[$normalizedName] = array_key_exists($normalizedName, $headers)
+                ? [...(array) $headers[$normalizedName], trim($value)]
+                : trim($value);
         }
 
         return $headers;
@@ -446,7 +449,7 @@ final class Profiler
             return false;
         }
 
-        $contentType = $this->headerMap()['content-type'] ?? '';
+        $contentType = implode(', ', (array) ($this->headerMap()['content-type'] ?? []));
 
         if (
             $contentType !== ''

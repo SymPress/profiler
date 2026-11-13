@@ -8,7 +8,7 @@ final class ProfileContext
 {
     /**
      * @param list<array{class: string, message: string, file: string, line: int}> $throwables
-     * @param array<string, string> $responseHeaders
+     * @param array<string, string|list<string>> $responseHeaders
      */
     public function __construct(
         private readonly string $token,
@@ -81,7 +81,11 @@ final class ProfileContext
         return $this->throwables;
     }
 
-    /** @return array<string, string> */
+    /**
+     * Header values by lower-case name; a header sent more than once holds the list of its values.
+     *
+     * @return array<string, string|list<string>>
+     */
     public function responseHeaders(): array
     {
         return $this->responseHeaders;
