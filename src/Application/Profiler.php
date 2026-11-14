@@ -131,7 +131,11 @@ final class Profiler
      */
     public function recordRedirect(mixed $location, mixed $status = 302): mixed
     {
-        if (is_string($location) && $location !== '' && !headers_sent() && $this->collecting()) {
+        // An external target never sends the next request here; the note would stick to an unrelated page.
+        $sameSite = is_string($location) && $location !== ''
+            && (!function_exists('wp_validate_redirect') || wp_validate_redirect($location, '') !== '');
+
+        if ($sameSite && !headers_sent() && $this->collecting()) {
             setcookie(self::REDIRECT_COOKIE, (string) json_encode([
                 'token'       => $this->token,
                 'route'       => $this->serverValue('REQUEST_URI', '/'),
