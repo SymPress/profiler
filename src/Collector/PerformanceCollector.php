@@ -377,11 +377,9 @@ final class PerformanceCollector extends AbstractCollector implements DataCollec
     /** @param array{name: string, started_at: float, memory_mb: float, detail: string, started_ms: float, duration_ms: float} $event */
     private function timelineEventName(array $event): string
     {
+        // The recorder stores the template's name: a file name, or a block template id such as "theme//page".
         if ($event['name'] === 'template_include' && $event['detail'] !== '') {
-            $path = str_replace('\\', '/', $event['detail']);
-            $template = basename($path);
-
-            return $template !== '' ? $template : $event['name'];
+            return $event['detail'];
         }
 
         return $event['name'];
