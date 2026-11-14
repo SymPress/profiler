@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.4.2 — 2026-11-14
+
+- Register `profiler.is_disabled_state_checker` as a closure, the type Symfony's traceable event dispatcher, HTTP client and validator expect. Sites with `symfony/framework-bundle` no longer stop with a TypeError when the event dispatcher is built.
+
 ## 1.4.1 — 2026-11-14
 
 - Narrow screens (checked at 375px in Chromium, Firefox and WebKit): the performance timeline and the profile search results scroll in place instead of pushing the page sideways, metadata tables wrap long values such as timestamps, and toolbar info panels span the screen above the toolbar instead of running off the right edge.
