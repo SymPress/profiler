@@ -34,7 +34,7 @@ final class ProfileViewBuilderTest extends TestCase
 
         self::assertCount(1, $builder->toolbarBlocks($profile));
         self::assertCount(2, $builder->panels($profile));
-        self::assertStringContainsString('sfToolbarMainContent-token', $builder->renderToolbarBootstrap($profile));
+        self::assertStringContainsString('sfToolbarMainContent-token', $builder->renderToolbarBootstrap('token'));
     }
 
     private function collector(string $key, string $label, string $icon, bool $hasToolbarBlock): DataCollectorInterface

@@ -28,6 +28,7 @@
         {"hook": "template_include", "method": "captureTemplate", "type": "filter", "priority": 1000},
         {"hook": "template_redirect", "method": "beginFrontendBuffer", "priority": -1000},
         {"hook": "kernel.error", "method": "recordThrowable"},
+        {"hook": "shutdown", "method": "measure", "priority": -999999},
         {"hook": "shutdown", "method": "finish", "priority": 999999}
       ],
       "tag": "profiler.hook"
@@ -48,7 +49,7 @@
         {"hook": "wp", "method": "mark", "accepted_args": 1},
         {"hook": "template_redirect", "method": "mark"},
         {"hook": "template_include", "method": "captureTemplate", "type": "filter", "priority": 999},
-        {"hook": "shutdown", "method": "mark", "priority": 900000}
+        {"hook": "shutdown", "method": "mark", "priority": -999998}
       ],
       "tag": "profiler.hook"
     },

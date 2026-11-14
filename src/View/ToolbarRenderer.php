@@ -16,16 +16,20 @@ final class ToolbarRenderer
     ) {
     }
 
-    /** @param list<ToolbarBlock> $blocks */
-    public function renderBootstrap(ProfileRecord $profile, array $blocks): string
+    /**
+     * The markup injected into the page: stylesheet, loader script and a placeholder. The script replaces
+     * the placeholder with renderContent() from /_wdt/{token} once the profile is stored.
+     */
+    public function renderBootstrap(string $token): string
     {
-        if ($blocks === []) {
-            return '';
-        }
-
         return $this->assets->toolbarBootstrap(
-            $this->renderContent($profile, $blocks),
-            $profile->token,
+            $this->renderContentWrapper(
+                token: $token,
+                itemsHtml: ['<div class="sf-toolbar-block"><div class="sf-toolbar-icon"><span class="sf-toolbar-value">Loading…</span></div></div>'],
+                closeIcon: $this->assets->icon('close'),
+                toggleIcon: $this->assets->icon('wp'),
+            ),
+            $token,
             $this->urls->toolbarStylesheet(),
             $this->urls->toolbarPlaceholder(),
             $this->urls->home(),

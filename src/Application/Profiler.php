@@ -15,7 +15,6 @@ use SymPress\Profiler\Value\ProfileSearchCriteria;
 final class Profiler
 {
     private bool $started = false;
-    private bool $finalized = false;
     private bool $forceEnabled = false;
     private bool $disabled = false;
     private bool $htmlBufferStarted = false;
@@ -69,7 +68,6 @@ final class Profiler
     {
         $this->disabled = true;
         $this->profile = null;
-        $this->finalized = true;
     }
 
     public function isEnabled(): bool
@@ -153,10 +151,27 @@ final class Profiler
         ];
     }
 
+    /**
+     * Fixes duration and memory when shutdown begins, for every kind of request. Collection runs at the
+     * end of shutdown and must not count itself or other shutdown callbacks as part of the response.
+     */
+    public function measure(): void
+    {
+        if (!$this->started || $this->disabled) {
+            return;
+        }
+
+        $this->measurement ??= [
+            'finished_at' => microtime(true),
+            'memory'      => memory_get_usage(true),
+            'peak_memory' => memory_get_peak_usage(true),
+        ];
+    }
+
     public function finish(): void
     {
         try {
-            $this->ensureProfile(true);
+            $this->ensureProfile();
         } catch (\Throwable $throwable) {
             // Last shutdown callback: an exception here would be uncaught and skip the rest of shutdown.
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- the only channel left during shutdown.
@@ -166,19 +181,19 @@ final class Profiler
 
     private function injectToolbar(string $content, int $phase = PHP_OUTPUT_HANDLER_FINAL): string
     {
-        // An explicit flush hands over a partial document: wait for the final chunk.
-        if (($phase & PHP_OUTPUT_HANDLER_FINAL) === 0) {
+        // An explicit flush hands over a partial document, and a cleaned buffer is discarded output.
+        if (($phase & PHP_OUTPUT_HANDLER_FINAL) === 0 || ($phase & PHP_OUTPUT_HANDLER_CLEAN) !== 0) {
             return $content;
         }
 
         try {
-            $profile = $this->ensureProfile();
-
-            if (!$profile instanceof ProfileRecord || !$this->shouldInjectIntoPayload($content)) {
+            if (!$this->collecting() || !$this->shouldInjectIntoPayload($content)) {
                 return $content;
             }
 
-            $toolbar = $this->viewBuilder->renderToolbarBootstrap($profile);
+            // Only a placeholder with the token: its script loads the toolbar from /_wdt/{token} once the
+            // profile exists (retrying while it does not), so nothing is collected while the page is sent.
+            $toolbar = $this->viewBuilder->renderToolbarBootstrap($this->token);
         } catch (\Throwable) {
             // The page comes first: without a toolbar it is still the page the site produced.
             return $content;
@@ -194,40 +209,36 @@ final class Profiler
         return $position === false ? $content . $toolbar : substr_replace($content, $toolbar, $position, 0);
     }
 
-    private function ensureProfile(bool $finalize = false): ?ProfileRecord
+    private function collecting(): bool
     {
         if (!$this->started || $this->disabled || !$this->gate->canAccessProfiler()) {
-            return null;
+            return false;
         }
 
         // Ask again: a theme or plugin may add a profiler.collect filter after the gate opened at plugins_loaded.
-        if (!$this->forceEnabled && !$this->gate->shouldCollect()) {
+        return $this->forceEnabled || $this->gate->shouldCollect();
+    }
+
+    /** Collects and stores the profile once, at the end of shutdown. */
+    private function ensureProfile(): ?ProfileRecord
+    {
+        if (!$this->collecting()) {
             return null;
         }
 
-        if ($this->finalized && $this->profile instanceof ProfileRecord) {
+        if ($this->profile instanceof ProfileRecord) {
             return $this->profile;
         }
 
-        // The toolbar is rendered when WordPress flushes the page at shutdown priority 1. That profile is
-        // provisional: finish() collects again at the end of shutdown so fatal errors, late log entries
-        // and the shutdown timeline reach the stored profile (Symfony's collect/lateCollect split).
-
-        // Measure once, when the response is done: the final pass must not add shutdown work and the
-        // profiler's own collection to the request duration and memory.
-        $this->measurement ??= [
-            'finished_at' => microtime(true),
-            'memory'      => memory_get_usage(true),
-            'peak_memory' => memory_get_peak_usage(true),
-        ];
+        $this->measure();
 
         $context = new ProfileContext(
             $this->token,
             $this->startedAt,
-            $this->measurement['finished_at'],
+            $this->measurement['finished_at'] ?? microtime(true),
             $this->startMemoryBytes,
-            $this->measurement['memory'],
-            $this->measurement['peak_memory'],
+            $this->measurement['memory'] ?? memory_get_usage(true),
+            $this->measurement['peak_memory'] ?? memory_get_peak_usage(true),
             $this->statusCode(),
             $this->template,
             $this->throwables,
@@ -263,8 +274,6 @@ final class Profiler
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- the only channel left during shutdown; the page must not fail.
             error_log(sprintf('Profiler could not store profile %s: %s', $this->token, $throwable->getMessage()));
         }
-
-        $this->finalized = $finalize;
 
         return $this->profile;
     }

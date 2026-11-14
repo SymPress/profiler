@@ -14,7 +14,8 @@ delegate to `ProfilerHooks`, which keeps the application lifecycle in
 | `template_redirect` at -1000 | `beginFrontendBuffer` | Start toolbar buffering only for accessible GET page navigations (`Accept` names HTML). |
 | `template_include` at 1000 | `captureTemplate` | Preserve and record the selected template path. |
 | `kernel.error` (`App::ACTION_ERROR`) | `recordThrowable` | Add a normalized throwable summary to the request context. |
-| `shutdown` at 999999 | `finish` | Collect again (the buffer-time profile is provisional), persist the profile, and finalize it. |
+| `shutdown` at -999999 | `measure` | Fix duration and memory at the start of shutdown. |
+| `shutdown` at 999999 | `finish` | Collect once and persist the profile. |
 
 `ProfilerRouteHooks` handles `/_profiler` and `/_wdt` endpoints on `init` before
 normal application routing.
@@ -99,11 +100,14 @@ and rendering: objects become `[object Class]` (or their string value when
 levels is closed with a placeholder.
 
 The toolbar is inserted before the last `</body>` of the final output chunk.
-On HTML pages WordPress flushes the buffer at `shutdown` priority 1; the profile
-collected there feeds the toolbar and is provisional. `finish()` at the end of
-`shutdown` collects again and stores the final profile, so fatal errors, late
-log entries and the `shutdown` timeline event are included. Duration and memory
-are measured once, at the first collection. Small `.json.index` sidecars hold
+Only a placeholder with the token is inserted: its script loads the toolbar from
+`/_wdt/{token}` and retries while the profile does not exist yet, as in Symfony.
+Nothing is collected while the page is sent. `measure()` fixes duration and
+memory when `shutdown` begins, for every kind of request; `finish()` at the end
+of `shutdown` collects once and stores the profile, so fatal errors, late log
+entries and work done by other shutdown callbacks are included without counting
+as response time.
+Small `.json.index` sidecars hold
 search metadata; search and `latest()` return these summaries without opening
 the full collector JSON. Existing profiles without sidecars are decoded once
 and backfilled for subsequent searches. Read-only legacy stores keep a

@@ -77,7 +77,7 @@ final class ToolbarRendererTest extends TestCase
             ],
         );
 
-        $html = $renderer->renderBootstrap(
+        $html = $renderer->renderContent(
             $profile,
             [
                 new ToolbarBlock('request', 'Request', '24.1 ms', 'GET /foo · 200', 'https://example.test/_profiler/token123?panel=request', 'cyan'),
@@ -85,7 +85,6 @@ final class ToolbarRendererTest extends TestCase
             ],
         );
 
-        self::assertStringContainsString('Profiler Toolbar', $html);
         self::assertStringContainsString('@homepage', $html);
         self::assertStringContainsString('109 ms', $html);
         self::assertStringContainsString('4.0 MiB', $html);
@@ -94,6 +93,14 @@ final class ToolbarRendererTest extends TestCase
         self::assertStringContainsString('sf-toolbar-block-right', $html);
         self::assertStringContainsString('sf-toolbar-ajax-clear', $html);
         self::assertStringContainsString('sfToolbarMainContent-token123', $html);
-        self::assertStringContainsString('/_wdt/styles', $html);
+
+        // The page only gets a placeholder; the loader script fetches the content above from /_wdt/{token}.
+        $bootstrap = $renderer->renderBootstrap('token123');
+        self::assertStringContainsString('Profiler Toolbar', $bootstrap);
+        self::assertStringContainsString('id="sfwdttoken123"', $bootstrap);
+        self::assertStringContainsString('sfToolbarMainContent-token123', $bootstrap);
+        self::assertStringContainsString('Loading…', $bootstrap);
+        self::assertStringContainsString('/_wdt/styles', $bootstrap);
+        self::assertStringNotContainsString('109 ms', $bootstrap);
     }
 }
