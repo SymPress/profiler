@@ -14,12 +14,16 @@ use SymPress\Profiler\Application\ProfilerRequestMatcher;
 use SymPress\Profiler\Collector\AssetCollector;
 use SymPress\Profiler\Collector\CacheCollector;
 use SymPress\Profiler\Collector\CronCollector;
+use SymPress\Profiler\Application\Profiler;
 use SymPress\Profiler\Collector\DatabaseCollector;
+use SymPress\Profiler\Collector\HookCollector;
 use SymPress\Profiler\Collector\LocalizationCollector;
 use SymPress\Profiler\Collector\OptionsCollector;
+use SymPress\Profiler\Collector\RequestCollector;
 use SymPress\Profiler\Collector\RestAjaxCollector;
 use SymPress\Profiler\Recorder\ProfilerHttpClientRecorder;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
+use SymPress\Profiler\Support\ArraySanitizer;
 use SymPress\Profiler\Value\ProfileContext;
 
 final class CollectorDataTest extends TestCase
@@ -204,6 +208,45 @@ final class CollectorDataTest extends TestCase
 
         self::assertSame('', $recorder->entries()[0]['url']);
         self::assertSame('A valid URL was not provided.', $recorder->entries()[0]['error']);
+    }
+
+    public function testListenersRegisteredThroughTheKernelAreNamedByTheirService(): void
+    {
+        // The kernel's HookLoader registers a closure that captures the service id and method.
+        $register = static function (string $serviceId, string $method): \Closure {
+            return static fn (mixed ...$arguments): mixed => [$serviceId, $method, $arguments];
+        };
+        $GLOBALS['wp_actions'] = ['init' => 1];
+        $GLOBALS['wp_filter'] = ['init' => (object) ['callbacks' => [10 => [
+            ['function' => $register(OptionsCollector::class, 'collect'), 'accepted_args' => 1],
+            ['function' => static fn (): bool => true, 'accepted_args' => 1],
+        ]]]];
+
+        try {
+            $listeners = (new HookCollector())->collect($this->context())['called_listeners'];
+        } finally {
+            unset($GLOBALS['wp_actions'], $GLOBALS['wp_filter']);
+        }
+
+        self::assertSame(OptionsCollector::class . '::collect', $listeners[0]['callback']);
+        self::assertStringEndsWith('OptionsCollector.php', $listeners[0]['file']);
+        self::assertSame('Closure', $listeners[1]['callback']);
+    }
+
+    public function testRedirectNoteIsReadFromTheCookieAndValidated(): void
+    {
+        $collect = fn (): ?array => (new RequestCollector(new ArraySanitizer(), WpContext::new()->force(WpContext::FRONTOFFICE)))->collect($this->context())['redirect'];
+
+        try {
+            $_COOKIE = [Profiler::REDIRECT_COOKIE => '{"token":"abc123","route":"/old-path","method":"GET","status_code":301}'];
+            self::assertSame(['token' => 'abc123', 'route' => '/old-path', 'method' => 'GET', 'status_code' => 301], $collect());
+            $_COOKIE = [Profiler::REDIRECT_COOKIE => '{"token":"../../etc","route":"/x"}'];
+            self::assertNull($collect());
+            $_COOKIE = [];
+            self::assertNull($collect());
+        } finally {
+            $_COOKIE = [];
+        }
     }
 
     private function gate(): ProfileGate
