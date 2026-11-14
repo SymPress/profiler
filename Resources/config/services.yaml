@@ -87,6 +87,7 @@ services:
     SymPress\Profiler\Recorder\ProfilerErrorRecorder:
         tags:
             - { name: profiler.hook, hook: 'plugins_loaded', method: enable, priority: 35 }
+            - { name: profiler.hook, hook: 'shutdown', method: captureFatal, priority: -1000000 }
             - { name: profiler.hook, hook: 'shutdown', method: captureShutdown, priority: 950000 }
 
     SymPress\Profiler\Recorder\ProfilerHttpClientRecorder:
