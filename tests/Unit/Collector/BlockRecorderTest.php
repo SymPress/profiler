@@ -63,6 +63,55 @@ final class BlockRecorderTest extends TestCase
         self::assertSame($blocks[0]['duration_ms'], $payload['total_duration_ms']);
     }
 
+    public function testSyncedPatternsRepeatedRendersAndDirectlyRenderedParentsKeepTheTree(): void
+    {
+        $recorder = new ProfilerBlockRecorder($this->gate());
+        $recorder->enable();
+        $block = static fn (string $name, array $attrs = [], array $inner = [], string $html = ''): array => ['blockName' => $name, 'attrs' => $attrs, 'innerHTML' => $html, 'innerBlocks' => $inner];
+        $paragraph = $block('core/paragraph', [], [], '<p>Hi</p>');
+        $pattern = $block('core/block', ['ref' => 42]);
+        $link = static fn (string $label): array => $block('core/navigation-link', ['label' => $label]);
+        $submenu = $block('core/navigation-submenu', ['label' => 'Docs'], [$link('A'), $link('B')]);
+        $navigation = $block('core/navigation', [], [$link('Home'), $submenu]);
+        $comments = $block('core/comment-template', [], [$paragraph]);
+
+        // A synced pattern: core replaces the inner blocks between render_block_data and render_block.
+        $recorder->start($pattern);
+        $recorder->start($paragraph);
+        $recorder->finish('<p>Hi</p>', $paragraph);
+        $recorder->finish('<p>Hi</p>', [...$pattern, 'innerBlocks' => [$paragraph]]);
+
+        // core/navigation renders links and submenus directly; a submenu ends after its own links.
+        $recorder->start($navigation);
+        $recorder->finish('<li>Home</li>', $link('Home'));
+        $recorder->finish('<li>A</li>', $link('A'));
+        $recorder->finish('<li>B</li>', $link('B'));
+        $recorder->finish('<li>Docs<ul><li>A</li><li>B</li></ul></li>', $submenu);
+        $recorder->finish('<nav>…</nav>', $navigation);
+
+        // core/comment-template renders its own block again for every comment.
+        $recorder->start($comments);
+        $recorder->finish('first comment', $comments);
+        $recorder->finish('first comment, second comment', $comments);
+
+        $rows = array_map(
+            static fn (array $row): string => str_repeat('  ', $row['depth']) . $row['name'] . ($row['timed'] ? '' : ' (untimed)') . (isset($row['attrs']['label']) ? ' ' . $row['attrs']['label'] : ''),
+            $recorder->blocks(),
+        );
+
+        self::assertSame([
+            'core/block',
+            '  core/paragraph',
+            'core/navigation',
+            '  core/navigation-link (untimed) Home',
+            '  core/navigation-submenu (untimed) Docs',
+            '    core/navigation-link (untimed) A',
+            '    core/navigation-link (untimed) B',
+            'core/comment-template',
+        ], $rows);
+        self::assertSame(29, $recorder->blocks()[7]['output_bytes']);
+    }
+
     public function testBlockThemesReportTheirTemplateAndTemplateParts(): void
     {
         $gate = $this->gate();

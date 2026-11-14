@@ -9,13 +9,22 @@ use SymPress\Profiler\Application\ProfileGate;
 final class ProfilerBlockRecorder
 {
     private bool $enabled = false;
-    private int $sequence = 0;
 
-    /** @var list<array{order: int, name: string, attrs: array<array-key, mixed>, started_at: float, memory_mb: float, depth: int, signature: string}> */
+    /**
+     * Rendered blocks in document order. A block that starts reserves its place, so children land after it.
+     *
+     * @var array<int, array{name: string, attrs: array<array-key, mixed>, duration_ms: float, timed: bool, dynamic: bool, memory_mb: float, depth: int, output_bytes: int}>
+     */
+    private array $blocks = [];
+
+    /** @var list<array{index: int, started_at: float, signature: string}> Open blocks, outermost first. */
     private array $stack = [];
 
-    /** @var array<int, array{name: string, attrs: array<array-key, mixed>, duration_ms: float, timed: bool, dynamic: bool, memory_mb: float, depth: int, output_bytes: int}> */
-    private array $blocks = [];
+    /** @var list<array{index: int, size: int}> Subtrees of the directly rendered blocks since the last start or end. */
+    private array $run = [];
+
+    /** @var array{index: int, started_at: float, signature: string, depth: int}|null */
+    private ?array $lastClosed = null;
 
     public function __construct(
         private readonly ProfileGate $gate,
@@ -40,13 +49,11 @@ final class ProfilerBlockRecorder
             return $parsedBlock;
         }
 
+        $this->run = [];
+        $this->blocks[] = $this->entry($parsedBlock, count($this->stack));
         $this->stack[] = [
-            'order'      => $this->nextOrder(),
-            'name'       => $this->blockName($parsedBlock),
-            'attrs'      => $this->blockAttrs($parsedBlock),
+            'index'      => array_key_last($this->blocks),
             'started_at' => microtime(true),
-            'memory_mb'  => round(memory_get_usage(true) / 1048576, 2),
-            'depth'      => count($this->stack),
             'signature'  => $this->signature($parsedBlock),
         ];
 
@@ -60,27 +67,35 @@ final class ProfilerBlockRecorder
             return $blockContent;
         }
 
-        $open = $this->stack === [] ? null : $this->stack[array_key_last($this->stack)];
-        // Blocks such as core/navigation render their children with WP_Block::render(), which fires
-        // render_block without render_block_data. Such a block never started here: record it as an
-        // untimed child of the open block instead of closing that block with the child's output.
-        $timed = $open !== null && $open['signature'] === $this->signature($parsedBlock);
+        $signature = $this->signature($parsedBlock);
+        // Other filters may return a non-string; pass it through untouched like core does.
+        $bytes = is_string($blockContent) ? strlen($blockContent) : 0;
 
-        if ($timed) {
-            array_pop($this->stack);
+        // The nearest open block with this identity ends here. Blocks opened above it never reported their
+        // end (a filter changed them in between) and are closed with it.
+        for ($position = count($this->stack) - 1; $position >= 0; $position--) {
+            if ($this->stack[$position]['signature'] !== $signature) {
+                continue;
+            }
+
+            $open = $this->stack[$position];
+            array_splice($this->stack, $position);
+            $this->run = [];
+            $this->lastClosed = [...$open, 'depth' => count($this->stack)];
+            $this->close($open['index'], $open['started_at'], $bytes, $block);
+
+            return $blockContent;
         }
 
-        $this->blocks[$timed ? $open['order'] : $this->nextOrder()] = [
-            'name'         => $timed ? $open['name'] : $this->blockName($parsedBlock),
-            'attrs'        => $timed ? $open['attrs'] : $this->blockAttrs($parsedBlock),
-            'duration_ms'  => $timed ? round((microtime(true) - $open['started_at']) * 1000, 2) : 0.0,
-            'timed'        => $timed,
-            'dynamic'      => $this->isDynamic($block),
-            'memory_mb'    => $timed ? $open['memory_mb'] : round(memory_get_usage(true) / 1048576, 2),
-            'depth'        => $timed ? $open['depth'] : count($this->stack),
-            // Other filters may return a non-string; pass it through untouched like core does.
-            'output_bytes' => is_string($blockContent) ? strlen($blockContent) : 0,
-        ];
+        // core/comment-template and core/comments render the same block again for each comment:
+        // the last call is the real end.
+        if ($this->lastClosed !== null && $this->lastClosed['signature'] === $signature && $this->lastClosed['depth'] === count($this->stack)) {
+            $this->close($this->lastClosed['index'], $this->lastClosed['started_at'], $bytes, $block);
+
+            return $blockContent;
+        }
+
+        $this->recordDirectRender($parsedBlock, $bytes, $block);
 
         return $blockContent;
     }
@@ -92,18 +107,73 @@ final class ProfilerBlockRecorder
      */
     public function blocks(): array
     {
-        $blocks = $this->blocks;
-        ksort($blocks);
-
-        return array_values($blocks);
+        return array_values($this->blocks);
     }
 
-    private function nextOrder(): int
+    /**
+     * core/navigation renders its children with WP_Block::render(), which fires render_block without
+     * render_block_data: such a block never started here and has no own timing. It ends after its
+     * children, so it adopts the directly rendered blocks before it, one per inner block.
+     *
+     * @param array<string, mixed> $parsedBlock
+     */
+    private function recordDirectRender(array $parsedBlock, int $bytes, mixed $block): void
     {
-        $order = $this->sequence;
-        $this->sequence++;
+        $entry = $this->entry($parsedBlock, count($this->stack));
+        $entry['output_bytes'] = $bytes;
+        $entry['dynamic'] = $this->isDynamic($block);
+        $innerBlocks = is_array($parsedBlock['innerBlocks'] ?? null) ? count($parsedBlock['innerBlocks']) : 0;
+        $children = $innerBlocks > 0 ? array_splice($this->run, -min($innerBlocks, count($this->run))) : [];
 
-        return $order;
+        if ($children === []) {
+            $this->blocks[] = $entry;
+            $this->run[] = ['index' => array_key_last($this->blocks), 'size' => 1];
+
+            return;
+        }
+
+        $first = $children[0]['index'];
+        $size = array_sum(array_column($children, 'size'));
+
+        for ($index = $first; $index < $first + $size; $index++) {
+            $this->blocks[$index]['depth']++;
+        }
+
+        array_splice($this->blocks, $first, 0, [$entry]);
+        $this->run[] = ['index' => $first, 'size' => $size + 1];
+    }
+
+    private function close(int $index, float $startedAt, int $bytes, mixed $block): void
+    {
+        if (!isset($this->blocks[$index])) {
+            return;
+        }
+
+        $this->blocks[$index] = [
+            ...$this->blocks[$index],
+            'duration_ms'  => round((microtime(true) - $startedAt) * 1000, 2),
+            'timed'        => true,
+            'dynamic'      => $this->isDynamic($block),
+            'output_bytes' => $bytes,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $parsedBlock
+     * @return array{name: string, attrs: array<array-key, mixed>, duration_ms: float, timed: bool, dynamic: bool, memory_mb: float, depth: int, output_bytes: int}
+     */
+    private function entry(array $parsedBlock, int $depth): array
+    {
+        return [
+            'name'         => $this->blockName($parsedBlock),
+            'attrs'        => $this->blockAttrs($parsedBlock),
+            'duration_ms'  => 0.0,
+            'timed'        => false,
+            'dynamic'      => false,
+            'memory_mb'    => round(memory_get_usage(true) / 1048576, 2),
+            'depth'        => $depth,
+            'output_bytes' => 0,
+        ];
     }
 
     /** @param array<string, mixed> $block */
@@ -127,17 +197,18 @@ final class ProfilerBlockRecorder
     }
 
     /**
-     * Cheap identity for pairing start and finish; filters may still change attributes in between.
+     * Identity for pairing start and end: name, attributes and markup length. Not the inner blocks:
+     * core/block (synced patterns) replaces them between the two filters.
      *
      * @param array<string, mixed> $block
      */
     private function signature(array $block): string
     {
         return sprintf(
-            '%s|%d|%d',
+            '%s|%s|%d',
             $this->blockName($block),
+            hash('crc32b', serialize($this->blockAttrs($block))),
             is_string($block['innerHTML'] ?? null) ? strlen($block['innerHTML']) : 0,
-            is_array($block['innerBlocks'] ?? null) ? count($block['innerBlocks']) : 0,
         );
     }
 
