@@ -103,4 +103,23 @@ final class ToolbarRendererTest extends TestCase
         self::assertStringContainsString('/_wdt/styles', $bootstrap);
         self::assertStringNotContainsString('109 ms', $bootstrap);
     }
+
+    public function testRequestsAreNamedAfterWhatTheyResolvedTo(): void
+    {
+        $renderer = new ToolbarRenderer(new WebProfilerAssets(), new ProfilerUrlGenerator());
+        $label = static fn (array $conditionals, string $uri, array $queriedObject = []): string => $renderer->renderContent(
+            new ProfileRecord('token123', '2026-11-14T10:00:00+00:00', ['method' => 'GET'], [
+                'request' => ['method' => 'GET', 'uri' => $uri, 'status_code' => 200],
+                'routing' => ['conditionals' => $conditionals, 'queried_object' => $queriedObject, 'request' => trim($uri, '/')],
+            ]),
+            [new ToolbarBlock('request', 'Request', '1 ms', '', '#', 'cyan')],
+        );
+
+        self::assertStringContainsString('@homepage', $label(['is_front_page' => true, 'is_home' => true], '/'));
+        self::assertStringContainsString('@blog', $label(['is_home' => true], '/blog/'));
+        self::assertStringNotContainsString('@homepage', $label(['is_home' => true], '/blog/'));
+        self::assertStringContainsString('@search', $label(['is_search' => true], '/'));
+        self::assertStringContainsString('@404', $label(['is_404' => true], '/missing-page/'));
+        self::assertStringContainsString('@migrations-are-classes', $label(['is_single' => true], '/blog/migrations-are-classes/', ['name' => 'migrations-are-classes']));
+    }
 }

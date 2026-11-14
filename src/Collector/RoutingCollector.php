@@ -77,7 +77,7 @@ final class RoutingCollector extends AbstractCollector implements DataCollectorI
         $requestPath = $this->stringValue($payload, 'request');
         $matchedRule = $this->stringValue($payload, 'matched_rule');
         $matchedQuery = $this->stringValue($payload, 'matched_query');
-        $routeLabel = $matchedRule !== '' ? $matchedRule : ($requestPath !== '' ? $requestPath : '/');
+        $routeLabel = $matchedRule !== '' ? $matchedRule : 'no rewrite rule matched';
         $queryVars = is_array($payload['query_vars'] ?? null) ? $payload['query_vars'] : [];
         $routeRows = [];
 
