@@ -73,7 +73,7 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
             'locale'               => function_exists('get_locale') ? (string) get_locale() : '',
             'multisite'            => function_exists('is_multisite') ? is_multisite() : false,
             'included_files_count' => count(get_included_files()),
-            'included_files'       => array_slice(get_included_files(), -80),
+            'included_files'       => get_included_files(),
             'bundles'              => $bundles,
             'captured_at'          => $context->finishedAtIso(),
         ];
@@ -139,7 +139,7 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
         ], 'Name', 'Value'));
         $html .= Html::section('Theme', Html::codeBlock($payload['theme'] ?? []));
         $html .= Html::section('Enabled Bundles (' . count($bundleRows) . ')', Html::table(['Name', 'Class'], $bundleRows));
-        $html .= Html::section('Recently Included Files', Html::codeBlock($payload['included_files'] ?? []));
+        $html .= Html::section('Included Files', Html::codeBlock($payload['included_files'] ?? []));
 
         return $this->panel(
             'kernel',
