@@ -23,8 +23,12 @@ final class ProfilerBlockRecorder
     /** @var list<array{index: int, size: int}> Subtrees of the directly rendered blocks since the last start or end. */
     private array $run = [];
 
-    /** @var array{index: int, started_at: float, signature: string, depth: int}|null */
-    private ?array $lastClosed = null;
+    /**
+     * Closed blocks by "depth|signature" while their parent is open, with the block count when they closed.
+     *
+     * @var array<string, array{index: int, started_at: float, blocks: int}>
+     */
+    private array $closed = [];
 
     public function __construct(
         private readonly ProfileGate $gate,
@@ -81,16 +85,28 @@ final class ProfilerBlockRecorder
             $open = $this->stack[$position];
             array_splice($this->stack, $position);
             $this->run = [];
-            $this->lastClosed = [...$open, 'depth' => count($this->stack)];
+            $depth = count($this->stack);
+            // The children of a closed block can no longer render again.
+            $this->closed = array_filter($this->closed, static fn (string $key): bool => (int) $key <= $depth, ARRAY_FILTER_USE_KEY);
+            $this->closed[$depth . '|' . $signature] = ['index' => $open['index'], 'started_at' => $open['started_at'], 'blocks' => count($this->blocks)];
             $this->close($open['index'], $open['started_at'], $bytes, $block);
 
             return $blockContent;
         }
 
-        // core/comment-template and core/comments render the same block again for each comment:
-        // the last call is the real end.
-        if ($this->lastClosed !== null && $this->lastClosed['signature'] === $signature && $this->lastClosed['depth'] === count($this->stack)) {
-            $this->close($this->lastClosed['index'], $this->lastClosed['started_at'], $bytes, $block);
+        // core/comment-template renders a copy of itself for each comment with WP_Block::render(): the first
+        // copy's end closed the template, and the next comments were recorded beside it. A later end of the
+        // same block is the real one, and what rendered in between were its children.
+        $closed = $this->closed[count($this->stack) . '|' . $signature] ?? null;
+
+        if ($closed !== null) {
+            for ($index = $closed['blocks']; $index < count($this->blocks); $index++) {
+                $this->blocks[$index]['depth']++;
+            }
+
+            $this->run = [];
+            $this->closed[count($this->stack) . '|' . $signature]['blocks'] = count($this->blocks);
+            $this->close($closed['index'], $closed['started_at'], $bytes, $block);
 
             return $blockContent;
         }
