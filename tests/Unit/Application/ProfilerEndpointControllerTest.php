@@ -61,7 +61,7 @@ final class ProfilerEndpointControllerTest extends TestCase
     {
         $GLOBALS['profiler_test_logged_in'] = false;
 
-        foreach (['/_profiler', '/_profiler/abc123', '/_profiler/latest', '/_wdt/abc123', '/_wdt/styles', '/_profiler/font/JetBrainsMono'] as $path) {
+        foreach (['/_profiler', '/_profiler/abc123', '/_profiler/latest', '/_profiler/phpinfo', '/_wdt/abc123', '/_wdt/styles', '/_profiler/font/JetBrainsMono'] as $path) {
             self::assertSame(['status' => 403, 'type' => 'text/plain; charset=UTF-8', 'body' => 'Access denied.'], $this->respond($path), $path);
         }
     }
@@ -90,6 +90,10 @@ final class ProfilerEndpointControllerTest extends TestCase
         $missing = $this->respond('/_profiler/missing');
         self::assertSame(404, $missing['status'] ?? null);
         self::assertStringContainsString('Profile not found', $missing['body'] ?? '');
+
+        $phpinfo = $this->respond('/_profiler/phpinfo');
+        self::assertSame(200, $phpinfo['status'] ?? null);
+        self::assertStringContainsString('PHP Version', $phpinfo['body'] ?? '');
 
         $latest = $this->respond('/_profiler/latest');
         self::assertSame(302, $latest['status'] ?? null);
