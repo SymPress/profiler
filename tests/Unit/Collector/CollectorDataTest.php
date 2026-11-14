@@ -6,6 +6,7 @@ namespace SymPress\Profiler\Tests\Unit\Collector;
 
 use PHPUnit\Framework\TestCase;
 use SymPress\Kernel\EnvConfig;
+use SymPress\Kernel\Kernel\KernelInterface;
 use SymPress\Kernel\Location\Locations;
 use SymPress\Kernel\SiteConfig;
 use SymPress\Kernel\WpContext;
@@ -17,6 +18,7 @@ use SymPress\Profiler\Collector\CronCollector;
 use SymPress\Profiler\Application\Profiler;
 use SymPress\Profiler\Collector\DatabaseCollector;
 use SymPress\Profiler\Collector\HookCollector;
+use SymPress\Profiler\Collector\KernelCollector;
 use SymPress\Profiler\Collector\LocalizationCollector;
 use SymPress\Profiler\Collector\OptionsCollector;
 use SymPress\Profiler\Collector\RequestCollector;
@@ -249,7 +251,33 @@ final class CollectorDataTest extends TestCase
         }
     }
 
+    public function testKernelBundlesComeFromTheCompiledContainer(): void
+    {
+        $kernel = $this->createMock(KernelInterface::class);
+        $kernel->expects(self::never())->method('discoverBundles');
+        $collector = new KernelCollector(
+            $this->siteConfig(),
+            WpContext::new()->force(WpContext::FRONTOFFICE),
+            $kernel,
+            ['ProfilerBundle' => 'SymPress\\Profiler\\ProfilerBundle', 'RuntimeBundle' => 'SymPress\\Runtime\\RuntimeBundle'],
+            ['ProfilerBundle' => ['path' => '/p', 'package' => 'sympress/profiler', 'type' => 'wordpress-muplugin', 'entry' => 'profiler/profiler.php']],
+        );
+
+        $payload = $collector->collect($this->context());
+
+        self::assertSame([
+            ['package' => 'sympress/profiler', 'type' => 'wordpress-muplugin', 'entry' => 'profiler/profiler.php', 'bundle' => 'SymPress\\Profiler\\ProfilerBundle'],
+            ['package' => 'RuntimeBundle', 'type' => '', 'entry' => '', 'bundle' => 'SymPress\\Runtime\\RuntimeBundle'],
+        ], $payload['bundles']);
+        self::assertSame(get_included_files(), $payload['included_files']);
+    }
+
     private function gate(): ProfileGate
+    {
+        return new ProfileGate($this->siteConfig(), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+    }
+
+    private function siteConfig(): SiteConfig
     {
         $config = $this->createStub(SiteConfig::class);
         $config->method('env')->willReturn(EnvConfig::LOCAL);
@@ -260,7 +288,7 @@ final class CollectorDataTest extends TestCase
         $config->method('get')->willReturn(null);
         $config->method('jsonSerialize')->willReturn([]);
 
-        return new ProfileGate($config, WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+        return $config;
     }
 
     private function context(): ProfileContext

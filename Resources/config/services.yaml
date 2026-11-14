@@ -186,5 +186,8 @@ services:
             - { name: profiler.collector, priority: 14 }
 
     SymPress\Profiler\Collector\KernelCollector:
+        arguments:
+            $bundleClasses: '%kernel.bundles%'
+            $bundleMetadata: '%kernel.bundles_metadata%'
         tags:
             - { name: profiler.collector, priority: 10 }

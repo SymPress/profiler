@@ -16,10 +16,16 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class KernelCollector extends AbstractCollector implements DataCollectorInterface
 {
+    /**
+     * @param array<string, string> $bundleClasses %kernel.bundles%
+     * @param array<string, array{path?: string, package?: string, type?: string, entry?: string}> $bundleMetadata %kernel.bundles_metadata%
+     */
     public function __construct(
         private readonly SiteConfig $config,
         private readonly WpContext $context,
         private readonly KernelInterface $kernel,
+        private readonly array $bundleClasses = [],
+        private readonly array $bundleMetadata = [],
     ) {
     }
 
@@ -43,12 +49,14 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
         $theme = function_exists('wp_get_theme') ? wp_get_theme() : null;
         $bundles = [];
 
-        foreach ($this->kernel->discoverBundles()->all() as $bundle) {
+        // The bundles the container was built with. discoverBundles() would scan packages again on every
+        // profiled request and replace the kernel's own registry.
+        foreach ($this->bundleClasses as $name => $class) {
             $bundles[] = [
-                'package' => $bundle->package(),
-                'type'    => $bundle->type(),
-                'entry'   => $bundle->entry(),
-                'bundle'  => $bundle->bundle()::class,
+                'package' => $this->bundleMetadata[$name]['package'] ?? $name,
+                'type'    => $this->bundleMetadata[$name]['type'] ?? '',
+                'entry'   => $this->bundleMetadata[$name]['entry'] ?? '',
+                'bundle'  => $class,
             ];
         }
 
