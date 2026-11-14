@@ -38,7 +38,7 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
             'request'        => is_object($wp) ? $this->stringFromMixed($wp->request ?? '') : '',
             'matched_rule'   => is_object($wp) ? $this->stringFromMixed($wp->matched_rule ?? '') : '',
             'matched_query'  => is_object($wp) ? $this->stringFromMixed($wp->matched_query ?? '') : '',
-            'query_vars'     => is_object($query) && is_array($query->query_vars ?? null) ? $query->query_vars : [],
+            'query_vars'     => is_object($query) && is_array($query->query_vars ?? null) ? $this->readableQueryVars($query->query_vars) : [],
             'request_sql'    => is_object($query) ? $this->readableSql($this->stringFromMixed($query->request ?? '')) : '',
             'post_count'     => is_object($query) && is_numeric($query->post_count ?? null) ? (int) $query->post_count : 0,
             'found_posts'    => is_object($query) && is_numeric($query->found_posts ?? null) ? (int) $query->found_posts : 0,
@@ -53,6 +53,21 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
                 'posts_per_page' => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('posts_per_page') : 0),
             ],
         ];
+    }
+
+    /**
+     * Search query vars such as search_orderby_title hold the same {hash} stand-ins as the SQL.
+     *
+     * @param array<mixed> $queryVars
+     * @return array<mixed>
+     */
+    private function readableQueryVars(array $queryVars): array
+    {
+        array_walk_recursive($queryVars, function (mixed &$value): void {
+            $value = is_string($value) ? $this->readableSql($value) : $value;
+        });
+
+        return $queryVars;
     }
 
     /** WP_Query::$request still holds wpdb's {hash} stand-ins for % in LIKE patterns. */
@@ -187,7 +202,7 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
                 'is_admin',
             ] as $conditional
         ) {
-            $conditionals[$conditional] = (bool) $conditional();
+            $conditionals[$conditional] = function_exists($conditional) && (bool) $conditional();
         }
 
         return $conditionals;
