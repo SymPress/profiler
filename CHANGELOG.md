@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.3 — 2026-11-14
+
+- Fix a fatal error on production sites whose `profiler.enable_outside_development` callback uses pluggable functions such as `current_user_can()`: since 1.2.8 the filter also ran at `muplugins_loaded`, before WordPress loads them. Early error capture is now limited to local and development environments and never asks the filter.
+- The error recorder keeps the result of the handler that was installed before it (a handler returning nothing stays "handled" instead of making PHP report the error again), leaves the handler stack alone when it never installed a handler, and keeps only a deprecation as the error seen before recording started.
+- A fatal error is read first at shutdown, so a warning or deprecation raised by a later shutdown callback no longer empties the Exceptions panel.
+- The HTTP client recorder accepts any value WordPress passes as URL; `wp_remote_get(false)` ended in a `TypeError` instead of WordPress's `WP_Error`.
+- Exceptions outside the collectors (toolbar rendering, profile assembly) no longer escape the output handler or the last shutdown callback. Long-value previews no longer need `ext-mbstring`.
+
 ## 1.3.2 — 2026-11-13
 
 - Internal: `ProfilerEndpointController::response()` builds the response for `/_profiler` and `/_wdt` routes without output or `exit`; `handle()` sends it. Every route is now covered by tests (access denial, toolbar, styles, font, profile, search, missing profile, latest redirect). No behavior change.
