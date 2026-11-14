@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.6 — 2026-11-14
+
+- Blocks: synced patterns (`core/block`) no longer leave their entry open. Core replaces the pattern's inner blocks between the two filters the recorder pairs on, so the pattern never ended and every following block was listed one level too deep and without timing. Blocks are now paired by name, attributes and markup length, against the nearest open block.
+- Blocks: `core/comment-template` and `core/comments`, which render the same block again for each comment, are timed until their last render instead of their first.
+- Blocks: a block rendered directly by its parent (for example a navigation submenu) is listed before the blocks it contains instead of after them as their sibling.
+
 ## 1.3.5 — 2026-11-14
 
 - Toolbar: requests are named after what they resolved to. The posts index is `@blog` and a search is `@search` (both were `@homepage`), a 404 is `@404` (it was named after the URL slug).
