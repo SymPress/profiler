@@ -67,6 +67,7 @@ services:
             - { name: profiler.hook, hook: 'template_include', method: captureTemplate, type: 'filter', priority: 1000 }
             - { name: profiler.hook, hook: 'template_redirect', method: beginFrontendBuffer, priority: -1000 }
             - { name: profiler.hook, hook: !php/const 'SymPress\Kernel\App::ACTION_ERROR', method: recordThrowable }
+            - { name: profiler.hook, hook: 'wp_redirect', method: recordRedirect, type: 'filter', priority: 999999, accepted_args: 2 }
             - { name: profiler.hook, hook: 'shutdown', method: measure, priority: -999999 }
             - { name: profiler.hook, hook: 'shutdown', method: finish, priority: 999999 }
 
