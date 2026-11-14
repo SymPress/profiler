@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Profiler\Collector;
 
 use SymPress\Kernel\WpContext;
+use SymPress\Profiler\Application\Profiler;
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Support\ArraySanitizer;
 use SymPress\Profiler\Support\Html;
@@ -61,6 +62,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             'peak_memory_mb'        => $context->peakMemoryMb(),
             'template'              => $context->template(),
             'template_name'         => TemplateName::label((string) $context->template()),
+            'redirect'              => $this->redirectedFrom(),
             'request_headers'       => $this->requestHeaders(),
             'response_headers'      => $this->sanitizer->normalizePayload($responseHeaders),
             'response_content_type' => implode(', ', (array) ($responseHeaders['content-type'] ?? '')),
@@ -223,6 +225,28 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
         $method = $this->stringValue($payload, 'method', 'GET');
 
         return sprintf('%s %s', strtoupper($method), $uri);
+    }
+
+    /**
+     * The request that redirected here, from the note Profiler::recordRedirect() left in a cookie.
+     *
+     * @return array{token: string, route: string, method: string, status_code: int}|null
+     */
+    private function redirectedFrom(): ?array
+    {
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- validated field by field below; views escape output.
+        $note = json_decode(is_string($_COOKIE[Profiler::REDIRECT_COOKIE] ?? null) ? wp_unslash($_COOKIE[Profiler::REDIRECT_COOKIE]) : '', true);
+
+        if (!is_array($note) || !is_string($note['token'] ?? null) || preg_match('/^[A-Za-z0-9_-]+$/D', $note['token']) !== 1) {
+            return null;
+        }
+
+        return [
+            'token'       => $note['token'],
+            'route'       => is_string($note['route'] ?? null) ? $note['route'] : '',
+            'method'      => is_string($note['method'] ?? null) ? $note['method'] : 'GET',
+            'status_code' => is_numeric($note['status_code'] ?? null) ? (int) $note['status_code'] : 302,
+        ];
     }
 
     /** @return array<string, string> */

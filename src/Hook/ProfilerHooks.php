@@ -28,6 +28,11 @@ final class ProfilerHooks
         return $this->profiler->captureTemplate($template);
     }
 
+    public function recordRedirect(mixed $location, mixed $status = 302): mixed
+    {
+        return $this->profiler->recordRedirect($location, $status);
+    }
+
     public function measure(): void
     {
         $this->profiler->measure();

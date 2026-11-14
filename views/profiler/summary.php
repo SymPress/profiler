@@ -28,7 +28,7 @@ $redirect = is_array($request['redirect'] ?? null) ? $request['redirect'] : null
         <span class="status-request-method"><?php echo $escape($redirectMethod) ?></span>
         <?php echo $escape($redirectRoute) ?>
         <?php if ($redirectToken !== ''): ?>
-            (<?php echo $escape($redirectToken) ?>)
+            (<a href="<?php echo $escape(str_replace($profile->token, $redirectToken, (string) ($meta['profiler_url'] ?? '#'))) ?>"><?php echo $escape($redirectToken) ?></a>)
         <?php endif; ?>
     </div>
 <?php endif; ?>

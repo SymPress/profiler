@@ -28,6 +28,7 @@
         {"hook": "template_include", "method": "captureTemplate", "type": "filter", "priority": 1000},
         {"hook": "template_redirect", "method": "beginFrontendBuffer", "priority": -1000},
         {"hook": "kernel.error", "method": "recordThrowable"},
+        {"hook": "wp_redirect", "method": "recordRedirect", "type": "filter", "priority": 999999, "accepted_args": 2},
         {"hook": "shutdown", "method": "measure", "priority": -999999},
         {"hook": "shutdown", "method": "finish", "priority": 999999}
       ],
@@ -111,7 +112,7 @@
       "priority": 100,
       "views": {"toolbar": "always", "panel": true},
       "sources": ["ProfileContext", "request superglobals", "current WordPress user"],
-      "payload_keys": ["method", "uri", "url", "ip", "user_agent", "referer", "content_type", "context", "context_flags", "status_code", "status_text", "started_at", "finished_at", "duration_ms", "memory_mb", "peak_memory_mb", "template", "template_name", "request_headers", "response_headers", "response_content_type", "query", "post", "cookies", "files", "server", "user", "throwables", "php_error"],
+      "payload_keys": ["method", "uri", "url", "ip", "user_agent", "referer", "content_type", "context", "context_flags", "status_code", "status_text", "started_at", "finished_at", "duration_ms", "memory_mb", "peak_memory_mb", "template", "template_name", "redirect", "request_headers", "response_headers", "response_content_type", "query", "post", "cookies", "files", "server", "user", "throwables", "php_error"],
       "sensitive_fields": ["ip", "user_agent", "referer", "request_headers", "query", "post", "cookies", "files", "server", "user", "throwables", "php_error"]
     },
     {

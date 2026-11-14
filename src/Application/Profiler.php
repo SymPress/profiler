@@ -14,6 +14,8 @@ use SymPress\Profiler\Value\ProfileSearchCriteria;
 
 final class Profiler
 {
+    public const string REDIRECT_COOKIE = 'sf_redirect';
+
     private bool $started = false;
     private bool $forceEnabled = false;
     private bool $disabled = false;
@@ -121,6 +123,24 @@ final class Profiler
         }
 
         $this->htmlBufferStarted = ob_start($this->injectToolbar(...));
+    }
+
+    /**
+     * A redirect ends this request; the page it leads to is profiled separately. Hand this profile's token
+     * to the next request in a cookie (as Symfony does) so that profile can show where it came from.
+     */
+    public function recordRedirect(mixed $location, mixed $status = 302): mixed
+    {
+        if (is_string($location) && $location !== '' && !headers_sent() && $this->collecting()) {
+            setcookie(self::REDIRECT_COOKIE, (string) json_encode([
+                'token'       => $this->token,
+                'route'       => $this->serverValue('REQUEST_URI', '/'),
+                'method'      => strtoupper($this->serverValue('REQUEST_METHOD', 'GET')),
+                'status_code' => is_numeric($status) ? (int) $status : 302,
+            ]), ['path' => '/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => function_exists('is_ssl') && is_ssl()]);
+        }
+
+        return $location;
     }
 
     public function captureTemplate(mixed $template): mixed
@@ -329,6 +349,11 @@ final class Profiler
 
         if (headers_sent()) {
             return;
+        }
+
+        // The redirect note is for this request only; RequestCollector still reads it from $_COOKIE.
+        if (isset($_COOKIE[self::REDIRECT_COOKIE])) {
+            setcookie(self::REDIRECT_COOKIE, '', ['expires' => 1, 'path' => '/']);
         }
 
         header('Cache-Control: private, no-cache, max-age=0, must-revalidate', true);
