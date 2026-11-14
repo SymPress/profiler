@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.5 — 2026-11-14
+
+- Toolbar: requests are named after what they resolved to. The posts index is `@blog` and a search is `@search` (both were `@homepage`), a 404 is `@404` (it was named after the URL slug).
+- Block themes: the Request panel title and the timeline's template row show the resolved block template (for example `sympress//page-package`) instead of `template-canvas.php`. New `request.template_name` payload key.
+- Templates: the hierarchy is the one WordPress tried, recorded from its `{type}_template_hierarchy` filters. It now includes custom page templates, no longer adds `singular.php` to every request, and is empty for requests that load no template (feeds, REST, AJAX).
+- 404 requests: the WordPress Query toolbar block and panel say that nothing matched instead of presenting the 404 template's loop as page data, and the Blocks panel no longer lists parsed blocks of an unrelated post.
+- Routing: "no rewrite rule matched" instead of repeating the request path as the matched route.
+
 ## 1.3.4 — 2026-11-14
 
 - Collect each profile once. The page now gets a toolbar placeholder whose script loads the toolbar from `/_wdt/{token}` (it did that already and replaced the inline copy), so HTML pages no longer run all collectors and write the profile twice.
