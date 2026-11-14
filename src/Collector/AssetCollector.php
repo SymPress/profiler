@@ -214,7 +214,10 @@ final class AssetCollector extends AbstractCollector implements DataCollectorInt
                 'handle'   => $itemHandle,
                 'src'      => $this->stringFromMixed($this->readProperty($dependency, 'src')),
                 'deps'     => $this->stringList($this->readProperty($dependency, 'deps')),
-                'ver'      => $this->stringFromMixed($this->readProperty($dependency, 'ver')),
+                // false means "append the WordPress version", null means none: what core prints in the URL.
+                'ver'      => $this->readProperty($dependency, 'ver') === false
+                    ? (string) get_bloginfo('version')
+                    : $this->stringFromMixed($this->readProperty($dependency, 'ver')),
                 'args'     => $this->stringFromMixed($this->readProperty($dependency, 'args')),
                 'extra'    => is_array($extra) ? $extra : [],
                 'enqueued' => in_array($itemHandle, $queue, true),

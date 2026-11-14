@@ -301,7 +301,8 @@ final class DatabaseCollector extends AbstractCollector implements DataCollector
     /** @param list<array{caller: string, count: int, duration_ms: float}> $callerBreakdown */
     private function aggregateCaller(array &$callerBreakdown, string $caller, float $durationMs): void
     {
-        $key = $caller !== '' ? $caller : 'unknown';
+        // wpdb's caller is the whole backtrace; the last frame is the function that ran the query.
+        $key = $caller !== '' ? trim((string) substr((string) strrchr(', ' . $caller, ','), 1)) : 'unknown';
 
         foreach ($callerBreakdown as &$row) {
             if ($row['caller'] !== $key) {
