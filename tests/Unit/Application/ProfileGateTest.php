@@ -72,6 +72,27 @@ final class ProfileGateTest extends TestCase
         self::assertTrue($gate(WpContext::FRONTOFFICE)->shouldCollect());
     }
 
+    public function testEarlyErrorCaptureNeverAsksTheProductionOptInFilter(): void
+    {
+        $asked = false;
+        add_filter('profiler.enable_outside_development', static function () use (&$asked): bool {
+            // At muplugins_loaded pluggable functions do not exist yet; a callback using them would fail.
+            $asked = true;
+
+            return true;
+        });
+        $gate = fn (string $environment): ProfileGate => new ProfileGate($this->config($environment), WpContext::new()->force(WpContext::FRONTOFFICE), new ProfilerRequestMatcher());
+
+        try {
+            self::assertFalse($gate(EnvConfig::PRODUCTION)->allowsEarlyErrorCapture());
+            self::assertFalse($asked);
+            self::assertTrue($gate(EnvConfig::LOCAL)->allowsEarlyErrorCapture());
+            self::assertTrue($gate(EnvConfig::PRODUCTION)->environmentAllowsProfiling());
+        } finally {
+            \ProfilerTestFilters::reset();
+        }
+    }
+
     public function testToolbarIsOnlyBufferedForHtmlNavigations(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';

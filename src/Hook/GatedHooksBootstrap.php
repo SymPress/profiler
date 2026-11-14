@@ -20,7 +20,7 @@ final readonly class GatedHooksBootstrap
     /** Errors raised while plugins load would otherwise be lost: the gate can only decide afterwards. */
     public function captureEarlyErrors(): void
     {
-        if (!$this->gate->environmentAllowsProfiling()) {
+        if (!$this->gate->allowsEarlyErrorCapture()) {
             return;
         }
 
