@@ -28,6 +28,11 @@ final class ProfilerHooks
         return $this->profiler->captureTemplate($template);
     }
 
+    public function measure(): void
+    {
+        $this->profiler->measure();
+    }
+
     public function recordThrowable(\Throwable $throwable): void
     {
         $this->profiler->recordThrowable($throwable);

@@ -67,6 +67,7 @@ services:
             - { name: profiler.hook, hook: 'template_include', method: captureTemplate, type: 'filter', priority: 1000 }
             - { name: profiler.hook, hook: 'template_redirect', method: beginFrontendBuffer, priority: -1000 }
             - { name: profiler.hook, hook: !php/const 'SymPress\Kernel\App::ACTION_ERROR', method: recordThrowable }
+            - { name: profiler.hook, hook: 'shutdown', method: measure, priority: -999999 }
             - { name: profiler.hook, hook: 'shutdown', method: finish, priority: 999999 }
 
     SymPress\Profiler\Recorder\ProfilerLifecycleRecorder:
@@ -82,7 +83,7 @@ services:
             - { name: profiler.hook, hook: 'wp', method: mark, accepted_args: 1 }
             - { name: profiler.hook, hook: 'template_redirect', method: mark }
             - { name: profiler.hook, hook: 'template_include', method: captureTemplate, type: 'filter', priority: 999 }
-            - { name: profiler.hook, hook: 'shutdown', method: mark, priority: 900000 }
+            - { name: profiler.hook, hook: 'shutdown', method: mark, priority: -999998 }
 
     SymPress\Profiler\Recorder\ProfilerErrorRecorder:
         tags:

@@ -155,7 +155,7 @@ final class ProfilerTest extends TestCase
         }
 
         self::assertStringContainsString('page', $content);
-        self::assertStringContainsString('Cost $1', $content);
+        self::assertStringContainsString('id="sfwdt', $content);
         $profile = new ProfileRecord('t', '2026-11-13T10:00:00+00:00', [], [
             'broken' => [ProfileViewBuilder::COLLECTOR_ERROR_KEY => ['class' => \LogicException::class, 'message' => 'collector <b>exploded</b>']],
             'contract' => [],
@@ -184,7 +184,7 @@ final class ProfilerTest extends TestCase
         self::assertSame(0, $storage->saveCount);
     }
 
-    public function testHtmlCallbackStoresProvisionalProfileAndFinishStoresTheFinalOne(): void
+    public function testPageGetsAToolbarPlaceholderAndTheProfileIsCollectedOnceAtFinish(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['HTTP_ACCEPT'] = 'text/html';
@@ -204,18 +204,24 @@ final class ProfilerTest extends TestCase
         ob_end_flush();
         $content = ob_get_clean();
         self::assertIsString($content);
-        self::assertStringNotContainsString('Cost $1', $partial);
+        self::assertStringNotContainsString('sfwdt', $partial);
         self::assertStringContainsString('literal $1 and ${2}', $content);
-        self::assertStringContainsString('${2}', $content);
-        self::assertGreaterThan(strpos($content, 'literal'), strpos($content, 'Cost $1'));
-        self::assertSame(0, $storage->saved?->collector('contract')['throwable_count']);
+        self::assertGreaterThan(strpos($content, 'literal'), strpos($content, 'id="sfwdt'));
+        // Sending the page collects nothing: the placeholder's script loads the toolbar afterwards.
+        self::assertSame(0, $storage->saveCount);
+        self::assertStringNotContainsString('Cost $1', $content);
 
         // Anything that happens after WordPress flushed the page still reaches the stored profile.
+        $profiler->measure();
+        $measuredAt = microtime(true);
         $profiler->recordThrowable(new \RuntimeException('late shutdown failure'));
+        usleep(20000);
         $profiler->finish();
         $profiler->finish();
-        self::assertSame(2, $storage->saveCount);
+        self::assertSame(1, $storage->saveCount);
         self::assertSame(1, $storage->saved?->collector('contract')['throwable_count']);
+        // The request ends when shutdown begins, not 20 ms later when the profile is collected.
+        self::assertLessThan($measuredAt + 0.01, (float) (new \DateTimeImmutable($storage->saved->createdAt))->format('U.u'));
     }
 
     public function testStoredAndRenderedDiagnosticsKeepCollectorValuesVerbatimWithoutTruncatingPayloads(): void

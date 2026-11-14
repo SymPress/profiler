@@ -22,9 +22,9 @@ final class ProfileViewBuilder
     ) {
     }
 
-    public function renderToolbarBootstrap(ProfileRecord $profile): string
+    public function renderToolbarBootstrap(string $token): string
     {
-        return $this->toolbarRenderer->renderBootstrap($profile, $this->toolbarBlocks($profile));
+        return $this->toolbarRenderer->renderBootstrap($token);
     }
 
     public function renderToolbarContent(ProfileRecord $profile): string
