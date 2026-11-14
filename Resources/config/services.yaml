@@ -27,8 +27,11 @@ services:
         alias: SymPress\Profiler\Application\Profiler
         public: true
 
+    # Symfony's debug services (event dispatcher, HTTP client, validator) take this id as a ?Closure.
     profiler.is_disabled_state_checker:
-        alias: SymPress\Profiler\Application\ProfilerDisabledStateChecker
+        class: Closure
+        factory: [Closure, fromCallable]
+        arguments: ['@SymPress\Profiler\Application\ProfilerDisabledStateChecker']
 
     SymPress\Profiler\Infrastructure\FilesystemProfileStorage:
         arguments:
