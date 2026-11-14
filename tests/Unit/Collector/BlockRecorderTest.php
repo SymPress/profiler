@@ -16,6 +16,7 @@ use SymPress\Profiler\Collector\TemplateCollector;
 use SymPress\Profiler\Recorder\ProfilerBlockRecorder;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
 use SymPress\Profiler\Recorder\ProfilerTemplateRecorder;
+use SymPress\Profiler\Support\TemplateName;
 use SymPress\Profiler\Value\ProfileContext;
 
 final class BlockRecorderTest extends TestCase
@@ -84,6 +85,33 @@ final class BlockRecorderTest extends TestCase
         self::assertSame(['slug' => 'header', 'name' => 'sympress', 'templates' => ['parts/header.html']], array_intersect_key($payload['template_parts'][0], ['slug' => 1, 'name' => 1, 'templates' => 1]));
         // No template_include event was recorded: nothing was rendered, so no render time is invented.
         self::assertSame(0.0, $payload['render_ms']);
+    }
+
+    public function testHierarchyIsWhatWordPressTriedAndTemplatesAreNamedByTheirBlockTemplate(): void
+    {
+        $gate = $this->gate();
+        $templates = new ProfilerTemplateRecorder($gate);
+        $templates->enable();
+        $GLOBALS['_wp_current_template_id'] = 'sympress//page-package';
+
+        try {
+            // WordPress asks for the page hierarchy (custom page template first), finds one and stops.
+            $GLOBALS['profiler_test_current_filter'] = 'page_template_hierarchy';
+            self::assertSame(['page-package.php', 'page-kernel.php', 'page-626.php', 'page.php'], apply_filters('page_template_hierarchy', ['page-package.php', 'page-kernel.php', 'page-626.php', 'page.php']));
+            $payload = (new TemplateCollector(new ProfilerLifecycleRecorder($gate), $templates, new ProfilerBlockRecorder($gate)))
+                ->collect(new ProfileContext('t', microtime(true) - 1, microtime(true), 0, 0, 0, 200, '/wp-includes/template-canvas.php', [], [], '/_profiler/t'));
+
+            self::assertSame('sympress//page-package', TemplateName::label('/wp-includes/template-canvas.php'));
+            self::assertSame('single.php', TemplateName::label('/themes/classic/single.php'));
+        } finally {
+            unset($GLOBALS['_wp_current_template_id'], $GLOBALS['profiler_test_current_filter']);
+            \ProfilerTestFilters::reset();
+        }
+
+        self::assertSame(['page-package.php', 'page-kernel.php', 'page-626.php', 'page.php'], array_column($payload['hierarchy'], 'template'));
+        // The resolved block template counts as existing even without a theme file (it may live in the database).
+        self::assertSame([true, false, false, false], array_column($payload['hierarchy'], 'exists'));
+        self::assertNotContains('singular.php', array_column($payload['hierarchy'], 'template'));
     }
 
     private function gate(): ProfileGate
