@@ -8,7 +8,7 @@ delegate to `ProfilerHooks`, which keeps the application lifecycle in
 
 | Hook | Method | Contract |
 |---|---|---|
-| `muplugins_loaded` at -1000 | `GatedHooksBootstrap::captureEarlyErrors` | When the environment allows profiling, start recording PHP errors before plugins load; the gate cannot decide yet because no user is known. |
+| `muplugins_loaded` at -1000 | `GatedHooksBootstrap::captureEarlyErrors` | In local and development environments, start recording PHP errors before plugins load; the gate cannot decide yet because no user is known. The production opt-in filter is not asked here: pluggable functions do not exist yet. |
 | `plugins_loaded` at -1000 | `GatedHooksBootstrap::register` | After pluggables load, authenticate and require `manage_options`; register collection hooks only when the gate opens, otherwise drop the early error buffer. |
 | `plugins_loaded` at 25 | `start` | Initialize timing/token and emit debug headers for authorized requests. |
 | `template_redirect` at -1000 | `beginFrontendBuffer` | Start toolbar buffering only for accessible GET page navigations (`Accept` names HTML). |

@@ -32,11 +32,21 @@ final class ProfileGate
         return $this->environmentAllowsProfiling() && $this->currentUserCanManageOptions();
     }
 
-    /** The part of the gate that is known before plugins load: no current user is involved. */
+    /** The part of the gate that needs no current user. */
     public function environmentAllowsProfiling(): bool
     {
         return !$this->context->isWpCli()
             && ($this->isDevelopmentEnvironment() || $this->canRunOutsideDevelopment());
+    }
+
+    /**
+     * Whether PHP errors may be recorded before plugins load. Local and development only: the production
+     * opt-in filter must not run here, because pluggable functions such as wp_get_current_user() do not
+     * exist yet and a callback that uses them would fail on every request.
+     */
+    public function allowsEarlyErrorCapture(): bool
+    {
+        return !$this->context->isWpCli() && $this->isDevelopmentEnvironment();
     }
 
     public function shouldCollect(): bool
