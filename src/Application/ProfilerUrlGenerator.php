@@ -62,7 +62,11 @@ final class ProfilerUrlGenerator
 
     public function toolbarStylesheet(): string
     {
-        return $this->url($this->toolbarPrefix . '/styles');
+        // The browser caches the stylesheet; the plugin file's time changes the URL after a package update.
+        return $this->withQuery(
+            $this->url($this->toolbarPrefix . '/styles'),
+            ['v' => (int) @filemtime(dirname(__DIR__, 2) . '/profiler.php')],
+        );
     }
 
     public function font(string $fontName): string
