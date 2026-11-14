@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.4.0 — 2026-11-14
+
+- Configuration: "View full PHP configuration" opens `/_profiler/phpinfo` (it pointed to `#`), as in Symfony's profiler. Same access check as every profiler route.
+- Configuration: bundles are read from the compiled container (`kernel.bundles`, `kernel.bundles_metadata`). The collector called `discoverBundles()`, which scanned all packages again on every profiled request and replaced the kernel's bundle registry.
+- Configuration: every included file is listed, not the last 80.
+- Request: the redirect note is only left for redirects that stay on this site. After a redirect to another site, the next page profiled here claimed to be its target.
+- WordPress Query: search query vars such as `search_orderby_title` show `%` instead of wpdb's `{hash}` stand-ins.
+
 ## 1.3.7 — 2026-11-14
 
 - Request: a page reached through a redirect shows "redirect from" with a link to the redirecting request's profile. The summary already rendered that note, but nothing filled it. `wp_redirect()` now hands the token to the next request in a short-lived `sf_redirect` cookie, as Symfony does. New `request.redirect` payload key.
