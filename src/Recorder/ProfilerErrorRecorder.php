@@ -70,10 +70,11 @@ final class ProfilerErrorRecorder
 
         $this->capturing = true;
 
-        // The kernel boots before any handler can be installed: keep the last error PHP saw until now.
+        // The kernel boots before any handler can be installed. Keep the last deprecation PHP saw until now;
+        // other error types may have been silenced with @, which cannot be told afterwards.
         $last = error_get_last();
 
-        if (is_array($last) && !$this->isFatal($last['type'])) {
+        if (is_array($last) && in_array($last['type'], [E_DEPRECATED, E_USER_DEPRECATED], true)) {
             $this->store($last['type'], $last['message'], $last['file'], $last['line']);
         }
 
@@ -85,6 +86,11 @@ final class ProfilerErrorRecorder
     private function uninstall(): void
     {
         $this->capturing = false;
+
+        if ($this->handler === null) {
+            return;
+        }
+
         // Peek at the active handler: restoring blindly would remove one a plugin installed after ours.
         // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- read-only peek, restored on the next line.
         $active = set_error_handler(null);
@@ -97,23 +103,32 @@ final class ProfilerErrorRecorder
         restore_error_handler();
     }
 
+    /**
+     * Runs first at shutdown. Any later warning or deprecation replaces error_get_last(), so the fatal
+     * error that ended the request has to be read before other shutdown callbacks run.
+     */
+    public function captureFatal(): void
+    {
+        if (!$this->enabled || $this->fatalError !== null) {
+            return;
+        }
+
+        $lastError = error_get_last();
+
+        if (!is_array($lastError) || !$this->isFatal($lastError['type'])) {
+            return;
+        }
+
+        $this->fatalError = $this->normalizeEntry($lastError['type'], $lastError['message'], $lastError['file'], $lastError['line']);
+    }
+
     public function captureShutdown(): void
     {
         if (!$this->enabled) {
             return;
         }
 
-        $lastError = error_get_last();
-
-        if (is_array($lastError) && $this->isFatal($lastError['type'])) {
-            $this->fatalError = $this->normalizeEntry(
-                $lastError['type'],
-                $lastError['message'],
-                $lastError['file'],
-                $lastError['line'],
-            );
-        }
-
+        $this->captureFatal();
         $this->uninstall();
     }
 
@@ -126,9 +141,10 @@ final class ProfilerErrorRecorder
             $this->store($severity, $message, $file, $line);
         }
 
-        // Keep the handler that was installed before the profiler (Sentry, Query Monitor) working.
+        // Keep the handler that was installed before the profiler (Sentry, Query Monitor) working. PHP treats
+        // every result but false as "handled", so a handler that returns nothing must stay handled.
         return is_callable($this->previousHandler)
-            ? ($this->previousHandler)($severity, $message, $file, $line) === true
+            ? ($this->previousHandler)($severity, $message, $file, $line) !== false
             : false;
     }
 

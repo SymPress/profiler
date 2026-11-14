@@ -58,6 +58,7 @@
       "collector_keys": ["exceptions", "logs"],
       "hooks": [
         {"hook": "plugins_loaded", "method": "enable", "priority": 35},
+        {"hook": "shutdown", "method": "captureFatal", "priority": -1000000},
         {"hook": "shutdown", "method": "captureShutdown", "priority": 950000}
       ],
       "tag": "profiler.hook"

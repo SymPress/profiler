@@ -134,6 +134,28 @@ final class LogCollectorTest extends TestCase
         self::assertSame([], $closed->entries());
     }
 
+    public function testPreviousHandlerResultIsKeptAndClosedGateLeavesHandlersAlone(): void
+    {
+        $errorReporting = error_reporting(E_ALL);
+        // Returns nothing: PHP treats that as handled, so the recorder must not turn it into false.
+        set_error_handler(static function (): void {
+        });
+        $recorder = new ProfilerErrorRecorder($this->gate());
+        $recorder->enable();
+
+        try {
+            self::assertTrue($recorder->record(E_USER_WARNING, 'handled by the previous handler'));
+        } finally {
+            $recorder->captureShutdown();
+            restore_error_handler();
+            error_reporting($errorReporting);
+        }
+
+        // A recorder that never installed a handler (closed production gate) must not touch the stack;
+        // PHPUnit's failOnRisky reports removed foreign handlers.
+        (new ProfilerErrorRecorder($this->gate()))->stopEarly();
+    }
+
     private function gate(): ProfileGate
     {
         $locations = $this->createStub(Locations::class);
