@@ -13,6 +13,7 @@ where applicable.
 - Configuration: every included file is listed, not the last 80.
 - Request: the redirect note is only left for redirects that stay on this site. After a redirect to another site, the next page profiled here claimed to be its target.
 - WordPress Query: search query vars such as `search_orderby_title` show `%` instead of wpdb's `{hash}` stand-ins.
+- Blocks: `core/comment-template` lists every comment's blocks inside it and is timed until its real end. Since 1.3.6 the first comment's render closed it, the following comments were listed beside it and two untimed template entries followed.
 
 ## 1.3.7 — 2026-11-14
 
