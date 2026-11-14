@@ -489,8 +489,12 @@ final class ToolbarRenderer
         $routing = $profile->collector('routing');
         $conditionals = is_array($routing['conditionals'] ?? null) ? $routing['conditionals'] : [];
 
-        if (($conditionals['is_front_page'] ?? false) === true || ($conditionals['is_home'] ?? false) === true) {
-            return '@homepage';
+        // WordPress has no route names: name the request after what it resolved to. is_home is the posts
+        // index, which is only the home page when no static front page is set.
+        foreach (['is_404' => '@404', 'is_search' => '@search', 'is_front_page' => '@homepage', 'is_home' => '@blog'] as $conditional => $label) {
+            if (($conditionals[$conditional] ?? false) === true) {
+                return $label;
+            }
         }
 
         $queriedObject = is_array($routing['queried_object'] ?? null) ? $routing['queried_object'] : [];
