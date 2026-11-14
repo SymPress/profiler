@@ -73,7 +73,9 @@ final class BlockRecorderTest extends TestCase
         $link = static fn (string $label): array => $block('core/navigation-link', ['label' => $label]);
         $submenu = $block('core/navigation-submenu', ['label' => 'Docs'], [$link('A'), $link('B')]);
         $navigation = $block('core/navigation', [], [$link('Home'), $submenu]);
-        $comments = $block('core/comment-template', [], [$paragraph]);
+        $commentContent = $block('core/comment-content');
+        $template = $block('core/comment-template', [], [$commentContent]);
+        $comments = $block('core/comments', [], [$template], '<div></div>');
 
         // A synced pattern: core replaces the inner blocks between render_block_data and render_block.
         $recorder->start($pattern);
@@ -89,10 +91,20 @@ final class BlockRecorderTest extends TestCase
         $recorder->finish('<li>Docs<ul><li>A</li><li>B</li></ul></li>', $submenu);
         $recorder->finish('<nav>…</nav>', $navigation);
 
-        // core/comment-template renders its own block again for every comment.
+        // core/comment-template renders a copy of itself per comment with WP_Block::render(): each copy only
+        // reports its end, the first one while the template is still open.
         $recorder->start($comments);
-        $recorder->finish('first comment', $comments);
-        $recorder->finish('first comment, second comment', $comments);
+        $recorder->start($template);
+        $recorder->start($commentContent);
+        $recorder->finish('first', $commentContent);
+        $recorder->finish('<li>first</li>', $template);
+        $recorder->start($commentContent);
+        $recorder->finish('second', $commentContent);
+        $recorder->finish('<li>second</li>', $template);
+        $recorder->finish('<ol><li>first</li><li>second</li></ol>', $template);
+        $recorder->finish('<div>…</div>', $comments);
+        $recorder->start($paragraph);
+        $recorder->finish('<p>Hi</p>', $paragraph);
 
         $rows = array_map(
             static fn (array $row): string => str_repeat('  ', $row['depth']) . $row['name'] . ($row['timed'] ? '' : ' (untimed)') . (isset($row['attrs']['label']) ? ' ' . $row['attrs']['label'] : ''),
@@ -107,9 +119,13 @@ final class BlockRecorderTest extends TestCase
             '  core/navigation-submenu (untimed) Docs',
             '    core/navigation-link (untimed) A',
             '    core/navigation-link (untimed) B',
-            'core/comment-template',
+            'core/comments',
+            '  core/comment-template',
+            '    core/comment-content',
+            '    core/comment-content',
+            'core/paragraph',
         ], $rows);
-        self::assertSame(29, $recorder->blocks()[7]['output_bytes']);
+        self::assertSame(38, $recorder->blocks()[8]['output_bytes']);
     }
 
     public function testBlockThemesReportTheirTemplateAndTemplateParts(): void
