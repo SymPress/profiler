@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.4 — 2026-11-14
+
+- Collect each profile once. The page now gets a toolbar placeholder whose script loads the toolbar from `/_wdt/{token}` (it did that already and replaced the inline copy), so HTML pages no longer run all collectors and write the profile twice.
+- Duration and memory are fixed when `shutdown` begins, for every kind of request. Timeline rows no longer run past the end of the request, the template row no longer includes the profiler's own collection, and the stored profile no longer contains the first pass's cache hits, cache groups and file loads.
+- A buffer that is discarded with `ob_end_clean()` no longer triggers work.
+
 ## 1.3.3 — 2026-11-14
 
 - Fix a fatal error on production sites whose `profiler.enable_outside_development` callback uses pluggable functions such as `current_user_can()`: since 1.2.8 the filter also ran at `muplugins_loaded`, before WordPress loads them. Early error capture is now limited to local and development environments and never asks the filter.
