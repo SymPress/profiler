@@ -100,6 +100,14 @@ final class ProfilerEndpointController
         $token = $this->matcher->token();
         $criteria = $this->matcher->searchCriteria();
 
+        if ($token === 'phpinfo') {
+            ob_start();
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_phpinfo -- Symfony's "View full PHP configuration" page; profiler access only.
+            phpinfo();
+
+            return $this->html((string) ob_get_clean(), 200);
+        }
+
         if ($token === 'latest') {
             $latest = $this->storage->latest(1)[0] ?? null;
 

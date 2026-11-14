@@ -135,7 +135,7 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
             ['label' => 'Intl locale', 'value' => $this->stringValue($payload, 'locale', 'n/a')],
             ['label' => 'Context', 'value' => $this->stringValue($payload, 'context', 'n/a')],
         ]));
-        $html .= '<p><a href="#">View full PHP configuration</a></p>';
+        $html .= '<p><a href="' . Html::escape(str_replace($profile->token, 'phpinfo', $this->profileUrl($profile))) . '">View full PHP configuration</a></p>';
         $html .= Html::section('Runtime', Html::keyValueTable([
             'home_url'       => Html::dumpValue($this->stringValue($payload, 'home_url')),
             'site_url'       => Html::dumpValue($this->stringValue($payload, 'site_url')),
