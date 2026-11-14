@@ -12,9 +12,6 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class CacheCollector extends AbstractCollector implements DataCollectorInterface
 {
-    /** @var array<string, mixed>|null */
-    private ?array $nginxCache = null;
-
     public function getKey(): string
     {
         return 'cache';
@@ -45,8 +42,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
             'cache_entry_count'     => $this->countCacheEntries($cacheStore),
             'groups'                => $this->cacheGroups($cacheStore),
             'stats'                 => $this->readStats($objectCache),
-            // Walks up to 10,000 cache files: once per request is enough.
-            'nginx_cache'           => $this->nginxCache ??= $this->nginxCacheData(),
+            'nginx_cache'           => $this->nginxCacheData(),
         ];
     }
 
