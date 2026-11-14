@@ -16,9 +16,6 @@ use SymPress\Profiler\Value\ToolbarBlock;
 
 final class KernelCollector extends AbstractCollector implements DataCollectorInterface
 {
-    /** @var list<array{package: string, type: string, entry: string, bundle: string}>|null */
-    private ?array $bundles = null;
-
     public function __construct(
         private readonly SiteConfig $config,
         private readonly WpContext $context,
@@ -44,11 +41,9 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
     public function collect(ProfileContext $context): array
     {
         $theme = function_exists('wp_get_theme') ? wp_get_theme() : null;
-        $bundles = $this->bundles ?? [];
+        $bundles = [];
 
-        // discoverBundles() re-reads every package manifest and replaces the kernel's registry: run it once
-        // per request, not once per collection pass.
-        foreach ($this->bundles === null ? $this->kernel->discoverBundles()->all() : [] as $bundle) {
+        foreach ($this->kernel->discoverBundles()->all() as $bundle) {
             $bundles[] = [
                 'package' => $bundle->package(),
                 'type'    => $bundle->type(),
@@ -56,8 +51,6 @@ final class KernelCollector extends AbstractCollector implements DataCollectorIn
                 'bundle'  => $bundle->bundle()::class,
             ];
         }
-
-        $this->bundles = $bundles;
 
         return [
             'environment'          => $this->config->env(),
