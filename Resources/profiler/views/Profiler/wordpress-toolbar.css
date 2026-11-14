@@ -1,0 +1,19 @@
+/*
+ * Narrow screens: Symfony positions an info panel at its block, so a panel wider than the space to the
+ * right of the block ran off screen. Span the viewport above the toolbar instead and scroll inside;
+ * the hover script's inline left/right values are overridden.
+ */
+@media (max-width: 767px) {
+    .sf-toolbar-block .sf-toolbar-info {
+        left: 0 !important;
+        position: fixed;
+        right: 0 !important;
+    }
+
+    .sf-toolbar-block:hover .sf-toolbar-info,
+    .sf-toolbar-block:focus-within .sf-toolbar-info,
+    .sf-toolbar-block.hover .sf-toolbar-info {
+        max-width: none;
+        overflow: auto;
+    }
+}

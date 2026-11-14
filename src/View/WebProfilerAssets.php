@@ -43,7 +43,8 @@ final class WebProfilerAssets
     {
         return $this->cached(
             'toolbar-css',
-            fn (): string => $this->cleanTwigComments($this->contents('views/Profiler/toolbar.css.twig')),
+            fn (): string => $this->cleanTwigComments($this->contents('views/Profiler/toolbar.css.twig'))
+                . $this->contents('views/Profiler/wordpress-toolbar.css'),
         );
     }
 
