@@ -23,6 +23,7 @@ use SymPress\Profiler\Collector\LocalizationCollector;
 use SymPress\Profiler\Collector\OptionsCollector;
 use SymPress\Profiler\Collector\RequestCollector;
 use SymPress\Profiler\Collector\RestAjaxCollector;
+use SymPress\Profiler\Collector\WordPressQueryCollector;
 use SymPress\Profiler\Recorder\ProfilerHttpClientRecorder;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
 use SymPress\Profiler\Support\ArraySanitizer;
@@ -270,6 +271,29 @@ final class CollectorDataTest extends TestCase
             ['package' => 'RuntimeBundle', 'type' => '', 'entry' => '', 'bundle' => 'SymPress\\Runtime\\RuntimeBundle'],
         ], $payload['bundles']);
         self::assertSame(get_included_files(), $payload['included_files']);
+    }
+
+    public function testQuerySqlAndQueryVarsShowPercentSignsInsteadOfPlaceholderHashes(): void
+    {
+        $GLOBALS['wpdb'] = new class {
+            public function remove_placeholder_escape(string $query): string
+            {
+                return str_replace('{abc}', '%', $query);
+            }
+        };
+        $GLOBALS['wp_query'] = (object) [
+            'request'    => "SELECT * FROM wp_posts WHERE post_title LIKE '{abc}kernel{abc}'",
+            'query_vars' => ['s' => 'kernel', 'search_orderby_title' => ["post_title LIKE '{abc}kernel{abc}'"], 'paged' => 0],
+        ];
+
+        try {
+            $payload = (new WordPressQueryCollector())->collect($this->context());
+        } finally {
+            unset($GLOBALS['wpdb'], $GLOBALS['wp_query']);
+        }
+
+        self::assertSame("SELECT * FROM wp_posts WHERE post_title LIKE '%kernel%'", $payload['request_sql']);
+        self::assertSame(['s' => 'kernel', 'search_orderby_title' => ["post_title LIKE '%kernel%'"], 'paged' => 0], $payload['query_vars']);
     }
 
     private function gate(): ProfileGate
