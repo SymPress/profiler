@@ -374,3 +374,9 @@
     gap: 0.75rem;
     grid-column: 1 / -1;
 }
+
+/* The three request parameter boxes are too narrow for a table search field: it covered the Value header. */
+#collector-content .profiler-request-parameters .table-search-field-label,
+#collector-content .profiler-request-parameters .table-search-field-input {
+    display: none;
+}
