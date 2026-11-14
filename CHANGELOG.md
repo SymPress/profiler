@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.3.7 — 2026-11-14
+
+- Request: a page reached through a redirect shows "redirect from" with a link to the redirecting request's profile. The summary already rendered that note, but nothing filled it. `wp_redirect()` now hands the token to the next request in a short-lived `sf_redirect` cookie, as Symfony does. New `request.redirect` payload key.
+- Hooks: listeners registered through the kernel are named by their service and method (they all read "Closure" in `HookLoader.php`). The tab is called "Listeners" and says that WordPress records which callbacks are registered, not which ran.
+- Assets: a dependency registered with version `false` shows the WordPress version that core appends to its URL instead of an empty cell.
+- WordPress Query: the request SQL shows `%` in LIKE patterns instead of wpdb's `{hash}` stand-ins.
+- Cache: the Nginx Cache section also finds `sympress/nginx-cache` (installed as `ns-nginx-cache`); `persistent` is always a boolean.
+- Database: the caller breakdown groups by the function that ran the query instead of by the whole backtrace, which made nearly every query its own row.
+- Logs: PHP notices are level `notice` and appear with the warnings; as `info` they were only in the "All" tab.
+- The toolbar stylesheet and the font are sent with `Cache-Control: private, max-age=3600`, so page views no longer boot WordPress twice more for them. The stylesheet URL carries the plugin file's time and changes after an update.
+- Request panel: the table search field no longer covers the "Value" header of the narrow parameter boxes.
+
 ## 1.3.6 — 2026-11-14
 
 - Blocks: synced patterns (`core/block`) no longer leave their entry open. Core replaces the pattern's inner blocks between the two filters the recorder pairs on, so the pattern never ended and every following block was listed one level too deep and without timing. Blocks are now paired by name, attributes and markup length, against the nearest open block.
