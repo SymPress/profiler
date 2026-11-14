@@ -18,6 +18,7 @@ use SymPress\Profiler\Collector\DatabaseCollector;
 use SymPress\Profiler\Collector\LocalizationCollector;
 use SymPress\Profiler\Collector\OptionsCollector;
 use SymPress\Profiler\Collector\RestAjaxCollector;
+use SymPress\Profiler\Recorder\ProfilerHttpClientRecorder;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
 use SymPress\Profiler\Value\ProfileContext;
 
@@ -190,6 +191,19 @@ final class CollectorDataTest extends TestCase
         self::assertSame([['domain' => 'default', 'loaded' => false], ['domain' => 'sympress', 'loaded' => true]], $payload['domains']);
         self::assertSame(1, $payload['domain_count']);
         self::assertSame('de_DE', $payload['user_locale']);
+    }
+
+    public function testHttpRecorderAcceptsWhateverWordPressPassesAsUrl(): void
+    {
+        $recorder = new ProfilerHttpClientRecorder($this->gate());
+        $recorder->enable();
+
+        // wp_remote_get(false): core hands the raw value to pre_http_request and returns a WP_Error.
+        self::assertFalse($recorder->track(false, ['method' => 'GET'], false));
+        $recorder->record(new \WP_Error('http_request_failed', 'A valid URL was not provided.'), 'response', 'WP_Http', ['method' => 'GET'], false);
+
+        self::assertSame('', $recorder->entries()[0]['url']);
+        self::assertSame('A valid URL was not provided.', $recorder->entries()[0]['error']);
     }
 
     private function gate(): ProfileGate

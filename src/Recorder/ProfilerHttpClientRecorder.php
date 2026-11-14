@@ -27,11 +27,14 @@ final class ProfilerHttpClientRecorder
     }
 
     /** @param array<string, mixed> $parsedArgs */
-    public function track(mixed $preempt, array $parsedArgs, string $url): mixed
+    public function track(mixed $preempt, array $parsedArgs, mixed $url): mixed
     {
         if (!$this->enabled) {
             return $preempt;
         }
+
+        // WordPress passes whatever the caller gave wp_remote_get(), e.g. false from a missing option.
+        $url = $this->mixedToString($url);
 
         $method = strtoupper($this->mixedToString($parsedArgs['method'] ?? 'GET'));
         $key = $this->pendingKey($method, $url);
@@ -47,11 +50,13 @@ final class ProfilerHttpClientRecorder
     }
 
     /** @param array<string, mixed> $parsedArgs */
-    public function record(mixed $response, string $context, string $class, array $parsedArgs, string $url): void
+    public function record(mixed $response, string $context, string $class, array $parsedArgs, mixed $url): void
     {
         if (!$this->enabled || $context !== 'response') {
             return;
         }
+
+        $url = $this->mixedToString($url);
 
         $method = strtoupper($this->mixedToString($parsedArgs['method'] ?? 'GET'));
         $pending = $this->popPending($method, $url);
