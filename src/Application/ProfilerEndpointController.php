@@ -34,14 +34,14 @@ final class ProfilerEndpointController
             $this->redirect($response['location']);
         }
 
-        $this->respond($response['body'], $response['status'], $response['type']);
+        $this->respond($response['body'], $response['status'], $response['type'], $response['static'] ?? false);
     }
 
     /**
      * The response for the current request, or null when it is not a profiler route. Kept free of
      * output and exit so every route can be tested.
      *
-     * @return array{status: int, type: string, body: string, location?: string}|null
+     * @return array{status: int, type: string, body: string, location?: string, static?: bool}|null
      */
     public function response(): ?array
     {
@@ -54,7 +54,7 @@ final class ProfilerEndpointController
         }
 
         if ($this->matcher->isToolbarStylesheetRequest()) {
-            return ['status' => 200, 'type' => 'text/css; charset=UTF-8', 'body' => $this->assets->toolbarCss()];
+            return ['status' => 200, 'type' => 'text/css; charset=UTF-8', 'body' => $this->assets->toolbarCss(), 'static' => true];
         }
 
         if ($this->matcher->isFontRequest()) {
@@ -68,7 +68,7 @@ final class ProfilerEndpointController
         return $this->matcher->isProfilerRequest() ? $this->profilerResponse() : null;
     }
 
-    /** @return array{status: int, type: string, body: string} */
+    /** @return array{status: int, type: string, body: string, static?: bool} */
     private function fontResponse(): array
     {
         $fontPath = $this->assets->fontPath($this->matcher->fontName() ?? '');
@@ -78,7 +78,7 @@ final class ProfilerEndpointController
             return $this->text('Font not found.', 404);
         }
 
-        return ['status' => 200, 'type' => 'font/woff2', 'body' => $contents];
+        return ['status' => 200, 'type' => 'font/woff2', 'body' => $contents, 'static' => true];
     }
 
     /** @return array{status: int, type: string, body: string} */
@@ -151,7 +151,7 @@ final class ProfilerEndpointController
         exit;
     }
 
-    private function respond(string $body, int $status, string $contentType): never
+    private function respond(string $body, int $status, string $contentType, bool $static = false): never
     {
         if (!defined('DONOTCACHEPAGE')) {
             define('DONOTCACHEPAGE', true);
@@ -163,7 +163,9 @@ final class ProfilerEndpointController
             http_response_code($status);
         }
 
-        header('Cache-Control: private, no-cache, max-age=0, must-revalidate', true);
+        // The toolbar stylesheet and the font are the same for every request: let the admin's browser keep
+        // them instead of booting WordPress for them on each page view. Never in shared caches.
+        header($static ? 'Cache-Control: private, max-age=3600' : 'Cache-Control: private, no-cache, max-age=0, must-revalidate', true);
         header('X-Accel-Expires: 0', true);
         header('Content-Type: ' . $contentType, true);
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw profiler response body.
