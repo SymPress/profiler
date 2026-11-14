@@ -149,7 +149,7 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
             ['label' => 'wordpress_hooks', 'active' => true],
         ]);
         $html .= Html::tabNavigation([
-            ['label' => 'Called Listeners', 'badge' => count($listenerRows), 'active' => true, 'target' => '#hooks-called-listeners'],
+            ['label' => 'Listeners', 'badge' => count($listenerRows), 'active' => true, 'target' => '#hooks-called-listeners'],
             ['label' => 'Not Called Listeners', 'disabled' => true],
             ['label' => 'Orphaned Events', 'disabled' => true],
         ]);
@@ -167,6 +167,7 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
                 $this->intValue($payload, 'listener_count'),
             );
         }
+        $html .= '<p class="help">Callbacks registered on the actions that fired, in firing order. WordPress does not record which callbacks ran.</p>';
         $html .= Html::section('Listener Details', Html::table(['Hook', 'Priority', 'Callback', 'Origin', 'File'], $listenerRows));
         $html .= Html::section('Fired Hook Summary', Html::table(['Priority', 'Listener'], $rows));
         $html .= '</div>';
@@ -314,6 +315,21 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         return $rows;
     }
 
+    /**
+     * The kernel's HookLoader registers every service hook as a closure that captures the service id and
+     * method. Without this, all of them read "Closure" in HookLoader.php.
+     *
+     * @return array{class: string, method: string}|null
+     */
+    private function kernelHookService(\Closure $callback): ?array
+    {
+        $used = (new \ReflectionFunction($callback))->getClosureUsedVariables();
+
+        return is_string($used['serviceId'] ?? null) && is_string($used['method'] ?? null)
+            ? ['class' => $used['serviceId'], 'method' => $used['method']]
+            : null;
+    }
+
     private function callbackName(mixed $callback): string
     {
         if (is_string($callback)) {
@@ -321,7 +337,9 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
         }
 
         if ($callback instanceof \Closure) {
-            return 'Closure';
+            $service = $this->kernelHookService($callback);
+
+            return $service !== null ? $service['class'] . '::' . $service['method'] : 'Closure';
         }
 
         if (is_array($callback) && count($callback) === 2) {
@@ -354,7 +372,10 @@ final class HookCollector extends AbstractCollector implements DataCollectorInte
             }
 
             if ($callback instanceof \Closure) {
-                $reflection = new \ReflectionFunction($callback);
+                $service = $this->kernelHookService($callback);
+                $reflection = $service !== null && class_exists($service['class'])
+                    ? new \ReflectionClass($service['class'])
+                    : new \ReflectionFunction($callback);
 
                 return (string) $reflection->getFileName();
             }
