@@ -279,6 +279,25 @@
     #collector-content .timeline-graph {
         min-width: 760px;
     }
+
+    /* The timeline keeps its width and scrolls; the page itself must not. */
+    #collector-content .sf-profiler-timeline {
+        overflow-x: auto;
+    }
+
+    #collector-content #search-results {
+        display: block;
+        overflow-x: auto;
+    }
+
+    #collector-content .metadata-table th.key {
+        width: auto;
+    }
+
+    /* Timestamps and paths have no break opportunity. */
+    #collector-content .metadata-table td {
+        overflow-wrap: anywhere;
+    }
 }
 
 /*
