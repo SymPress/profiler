@@ -53,7 +53,7 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
             'block_template' => $blockTemplate,
             // Requests without a template (REST, AJAX) rendered nothing.
             'render_ms'      => $renderStartedAt === null ? 0.0 : round(max(0.0, ($context->finishedAt() - $renderStartedAt) * 1000), 2),
-            'hierarchy'      => $this->templateHierarchy(),
+            'hierarchy'      => $this->templateHierarchy($blockTemplate),
             'template_parts' => [...$this->templates->parts(), ...$this->blockTemplateParts()],
             'theme'          => [
                 'name'       => is_object($theme) ? (string) $theme->get('Name') : '',
@@ -205,84 +205,35 @@ final class TemplateCollector extends AbstractCollector implements DataCollector
         return '';
     }
 
-    /** @return list<array{template: string, exists: bool, path: string}> */
-    private function templateHierarchy(): array
+    /**
+     * The candidates WordPress itself tried, in its order, as recorded from the template hierarchy filters.
+     * Requests that load no template (feeds, REST, AJAX) have none.
+     *
+     * @return list<array{template: string, exists: bool, path: string}>
+     */
+    private function templateHierarchy(string $blockTemplate): array
     {
-        $candidates = $this->templateCandidates();
+        // "theme//page-package" resolves the candidate "page-package.php", also when it lives in the database.
+        $resolved = $blockTemplate !== '' ? substr((string) strrchr('/' . $blockTemplate, '/'), 1) . '.php' : '';
         $rows = [];
 
-        foreach ($candidates as $candidate) {
-            $path = function_exists('locate_template') ? locate_template([$candidate], false, false) : '';
-            $path = $path !== '' ? $path : $this->blockTemplateFile($candidate);
-            $rows[] = [
-                'template' => $candidate,
-                'exists'   => $path !== '',
-                'path'     => $path,
-            ];
-        }
+        foreach ($this->templates->hierarchy() as $step) {
+            foreach ($step['templates'] as $candidate) {
+                if (isset($rows[$candidate])) {
+                    continue;
+                }
 
-        return $rows;
-    }
-
-    /** @return list<string> */
-    private function templateCandidates(): array
-    {
-        $candidates = [];
-
-        if (function_exists('is_front_page') && is_front_page()) {
-            $candidates[] = 'front-page.php';
-        }
-
-        if (function_exists('is_home') && is_home()) {
-            $candidates[] = 'home.php';
-        }
-
-        if (function_exists('is_page') && is_page()) {
-            $object = function_exists('get_queried_object') ? get_queried_object() : null;
-            $slug = is_object($object) && is_scalar($object->post_name ?? null) ? (string) $object->post_name : '';
-            $id = is_object($object) && is_numeric($object->ID ?? null) ? (int) $object->ID : 0;
-
-            if ($slug !== '') {
-                $candidates[] = 'page-' . $slug . '.php';
+                $path = function_exists('locate_template') ? locate_template([$candidate], false, false) : '';
+                $path = $path !== '' ? $path : $this->blockTemplateFile($candidate);
+                $rows[$candidate] = [
+                    'template' => $candidate,
+                    'exists'   => $path !== '' || basename($candidate) === $resolved,
+                    'path'     => $path,
+                ];
             }
-
-            if ($id > 0) {
-                $candidates[] = 'page-' . $id . '.php';
-            }
-
-            $candidates[] = 'page.php';
         }
 
-        if (function_exists('is_single') && is_single()) {
-            $object = function_exists('get_queried_object') ? get_queried_object() : null;
-            $type = is_object($object) && is_scalar($object->post_type ?? null) ? (string) $object->post_type : 'post';
-            $slug = is_object($object) && is_scalar($object->post_name ?? null) ? (string) $object->post_name : '';
-
-            // @phpstan-ignore notIdentical.alwaysTrue (defensive handling of filtered WordPress object properties.)
-            if ($type !== '') {
-                $candidates[] = 'single-' . $type . ($slug !== '' ? '-' . $slug : '') . '.php';
-                $candidates[] = 'single-' . $type . '.php';
-            }
-
-            $candidates[] = 'single.php';
-        }
-
-        if (function_exists('is_archive') && is_archive()) {
-            $candidates[] = 'archive.php';
-        }
-
-        if (function_exists('is_search') && is_search()) {
-            $candidates[] = 'search.php';
-        }
-
-        if (function_exists('is_404') && is_404()) {
-            $candidates[] = '404.php';
-        }
-
-        $candidates[] = 'singular.php';
-        $candidates[] = 'index.php';
-
-        return array_values(array_unique($candidates));
+        return array_values($rows);
     }
 
     /**
