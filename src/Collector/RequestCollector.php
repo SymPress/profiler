@@ -8,6 +8,7 @@ use SymPress\Kernel\WpContext;
 use SymPress\Profiler\Contract\DataCollectorInterface;
 use SymPress\Profiler\Support\ArraySanitizer;
 use SymPress\Profiler\Support\Html;
+use SymPress\Profiler\Support\TemplateName;
 use SymPress\Profiler\Value\ProfileContext;
 use SymPress\Profiler\Value\ProfileRecord;
 use SymPress\Profiler\Value\ToolbarBlock;
@@ -59,6 +60,7 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
             'memory_mb'             => $context->memoryMb(),
             'peak_memory_mb'        => $context->peakMemoryMb(),
             'template'              => $context->template(),
+            'template_name'         => TemplateName::label((string) $context->template()),
             'request_headers'       => $this->requestHeaders(),
             'response_headers'      => $this->sanitizer->normalizePayload($responseHeaders),
             'response_content_type' => implode(', ', (array) ($responseHeaders['content-type'] ?? '')),
@@ -211,10 +213,10 @@ final class RequestCollector extends AbstractCollector implements DataCollectorI
     /** @param array<string, mixed> $payload */
     private function requestTitle(array $payload): string
     {
-        $template = $this->stringValue($payload, 'template');
+        $template = $this->stringValue($payload, 'template_name', basename($this->stringValue($payload, 'template')));
 
         if ($template !== '') {
-            return basename($template);
+            return $template;
         }
 
         $uri = $this->stringValue($payload, 'uri', '/');

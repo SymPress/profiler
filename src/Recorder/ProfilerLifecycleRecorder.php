@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SymPress\Profiler\Recorder;
 
 use SymPress\Profiler\Application\ProfileGate;
+use SymPress\Profiler\Support\TemplateName;
 
 final class ProfilerLifecycleRecorder
 {
@@ -65,7 +66,7 @@ final class ProfilerLifecycleRecorder
                 'name'       => 'template_include',
                 'started_at' => microtime(true),
                 'memory_mb'  => round(memory_get_usage(true) / 1048576, 2),
-                'detail'     => is_string($template) ? $template : '',
+                'detail'     => is_string($template) ? TemplateName::label($template) : '',
             ];
         }
 
