@@ -273,7 +273,8 @@ final class Html
             // Nothing is cut: long values stay complete but start collapsed so one row cannot fill the page.
             return new HtmlString(sprintf(
                 '<details class="profiler-long-value"><summary><span class="sf-dump-str">"%s…"</span> <span class="text-muted">(%d bytes)</span></summary>%s</details>',
-                self::escape(mb_strcut($string, 0, 120)),
+                // substr() may cut inside a multi-byte character; escape() substitutes the broken tail.
+                self::escape(substr($string, 0, 120)),
                 strlen($string),
                 $dump,
             ));

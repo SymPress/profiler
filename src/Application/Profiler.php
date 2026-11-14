@@ -155,7 +155,13 @@ final class Profiler
 
     public function finish(): void
     {
-        $this->ensureProfile(true);
+        try {
+            $this->ensureProfile(true);
+        } catch (\Throwable $throwable) {
+            // Last shutdown callback: an exception here would be uncaught and skip the rest of shutdown.
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- the only channel left during shutdown.
+            error_log(sprintf('Profiler could not finish profile %s: %s', $this->token, $throwable->getMessage()));
+        }
     }
 
     private function injectToolbar(string $content, int $phase = PHP_OUTPUT_HANDLER_FINAL): string
@@ -165,13 +171,18 @@ final class Profiler
             return $content;
         }
 
-        $profile = $this->ensureProfile();
+        try {
+            $profile = $this->ensureProfile();
 
-        if (!$profile instanceof ProfileRecord || !$this->shouldInjectIntoPayload($content)) {
+            if (!$profile instanceof ProfileRecord || !$this->shouldInjectIntoPayload($content)) {
+                return $content;
+            }
+
+            $toolbar = $this->viewBuilder->renderToolbarBootstrap($profile);
+        } catch (\Throwable) {
+            // The page comes first: without a toolbar it is still the page the site produced.
             return $content;
         }
-
-        $toolbar = $this->viewBuilder->renderToolbarBootstrap($profile);
 
         if ($toolbar === '') {
             return $content;
