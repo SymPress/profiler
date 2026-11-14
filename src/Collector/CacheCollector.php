@@ -36,7 +36,7 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
 
         return [
             'backend_class'         => is_object($objectCache) ? $objectCache::class : '',
-            'persistent'            => function_exists('wp_using_ext_object_cache') ? wp_using_ext_object_cache() : false,
+            'persistent'            => function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache() === true,
             'global_groups'         => is_object($objectCache) ? $this->groupNames($objectCache->global_groups ?? null) : [],
             'non_persistent_groups' => is_object($objectCache) ? $this->groupNames($objectCache->non_persistent_groups ?? null) : [],
             'cache_entry_count'     => $this->countCacheEntries($cacheStore),
@@ -207,9 +207,13 @@ final class CacheCollector extends AbstractCollector implements DataCollectorInt
     /** @return array<string, mixed> */
     private function nginxCacheData(): array
     {
-        $pluginFile = 'nginx-cache/nginx-cache.php';
+        // sympress/nginx-cache installs as ns-nginx-cache; the original plugin as nginx-cache.
+        $pluginFile = array_find(
+            ['ns-nginx-cache/ns-nginx-cache.php', 'nginx-cache/nginx-cache.php'],
+            fn (string $file): bool => $this->nginxCachePluginExists($file) && $this->nginxCachePluginActive($file),
+        );
 
-        if (!$this->nginxCachePluginExists($pluginFile) || !$this->nginxCachePluginActive($pluginFile)) {
+        if ($pluginFile === null) {
             return [];
         }
 

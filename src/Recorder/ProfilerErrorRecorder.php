@@ -227,6 +227,9 @@ final class ProfilerErrorRecorder
             E_USER_WARNING => 'warning',
             E_DEPRECATED,
             E_USER_DEPRECATED => 'deprecation',
+            // The Logs panel counts notices with warnings; as "info" they were in no tab but "All".
+            E_NOTICE,
+            E_USER_NOTICE => 'notice',
             default => 'info',
         };
     }

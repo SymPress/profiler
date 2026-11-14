@@ -39,7 +39,7 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
             'matched_rule'   => is_object($wp) ? $this->stringFromMixed($wp->matched_rule ?? '') : '',
             'matched_query'  => is_object($wp) ? $this->stringFromMixed($wp->matched_query ?? '') : '',
             'query_vars'     => is_object($query) && is_array($query->query_vars ?? null) ? $query->query_vars : [],
-            'request_sql'    => is_object($query) ? $this->stringFromMixed($query->request ?? '') : '',
+            'request_sql'    => is_object($query) ? $this->readableSql($this->stringFromMixed($query->request ?? '')) : '',
             'post_count'     => is_object($query) && is_numeric($query->post_count ?? null) ? (int) $query->post_count : 0,
             'found_posts'    => is_object($query) && is_numeric($query->found_posts ?? null) ? (int) $query->found_posts : 0,
             'max_num_pages'  => is_object($query) && is_numeric($query->max_num_pages ?? null) ? (int) $query->max_num_pages : 0,
@@ -53,6 +53,16 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
                 'posts_per_page' => $this->intFromMixed(function_exists('get_query_var') ? get_query_var('posts_per_page') : 0),
             ],
         ];
+    }
+
+    /** WP_Query::$request still holds wpdb's {hash} stand-ins for % in LIKE patterns. */
+    private function readableSql(string $sql): string
+    {
+        $wpdb = $GLOBALS['wpdb'] ?? null;
+
+        return is_object($wpdb) && method_exists($wpdb, 'remove_placeholder_escape')
+            ? $this->stringFromMixed($wpdb->remove_placeholder_escape($sql))
+            : $sql;
     }
 
     /** @param array<string, mixed> $payload */
