@@ -56,16 +56,23 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
     }
 
     /** @param array<string, mixed> $payload */
+    private function isNotFound(array $payload): bool
+    {
+        return is_array($payload['conditionals'] ?? null) && ($payload['conditionals']['is_404'] ?? false) === true;
+    }
+
+    /** @param array<string, mixed> $payload */
     public function createToolbarBlock(array $payload, ProfileRecord $profile): ToolbarBlock
     {
         $foundPosts = $this->intValue($payload, 'found_posts');
         $postCount = $this->intValue($payload, 'post_count');
+        $notFound = $this->isNotFound($payload);
 
         return new ToolbarBlock(
             'wp_query',
             'WordPress Query',
-            sprintf('%d posts', $postCount),
-            $foundPosts > 0 ? sprintf('%d found', $foundPosts) : 'no pagination total',
+            $notFound ? '404' : sprintf('%d posts', $postCount),
+            $notFound ? 'nothing matched the request' : ($foundPosts > 0 ? sprintf('%d found', $foundPosts) : 'no pagination total'),
             $this->profileUrl($profile, 'wp_query'),
             'cyan',
         );
@@ -96,6 +103,10 @@ final class WordPressQueryCollector extends AbstractCollector implements DataCol
         }
 
         $html = '<h2>WordPress Query</h2>';
+
+        if ($this->isNotFound($payload)) {
+            $html .= '<p class="help">This request is a 404. Posts listed here come from the query the 404 template ran; they are not the requested content.</p>';
+        }
         $html .= Html::metricTiles([
             ['label' => 'Posts returned', 'value' => (string) $this->intValue($payload, 'post_count')],
             ['label' => 'Found posts', 'value' => (string) $this->intValue($payload, 'found_posts')],

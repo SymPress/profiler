@@ -139,7 +139,8 @@ final class BlockCollector extends AbstractCollector implements DataCollectorInt
 
         $query = $GLOBALS['wp_query'] ?? null;
 
-        if (!is_object($query) || !is_array($query->posts ?? null)) {
+        // On a 404 the query holds whatever the 404 template looped over, not the requested content.
+        if (!is_object($query) || !is_array($query->posts ?? null) || ($query->is_404 ?? false) === true) {
             return [];
         }
 
