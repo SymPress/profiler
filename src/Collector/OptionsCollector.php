@@ -128,11 +128,15 @@ final class OptionsCollector extends AbstractCollector implements DataCollectorI
 
     /**
      * wp_load_alloptions() and the options table hold raw strings: show what get_option() would return.
-     * Objects keep their serialized form, because the stored profile cannot represent them.
+     * Objects keep their serialized form, because the stored profile cannot represent them. Classes are
+     * never instantiated: every option is decoded here, so a stored gadget must not reach its magic methods.
      */
     private function decodeValue(mixed $value): mixed
     {
-        $decoded = is_string($value) && function_exists('maybe_unserialize') ? maybe_unserialize($value) : $value;
+        $decoded = is_string($value) && function_exists('is_serialized') && is_serialized($value)
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize -- allowed_classes => false never instantiates objects.
+            ? @unserialize(trim($value), ['allowed_classes' => false])
+            : $value;
 
         return is_object($decoded) ? $value : $decoded;
     }
