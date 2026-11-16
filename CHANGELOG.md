@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.4.3 — 2026-11-16
+
+- Decode option and transient values in the Options panel with `unserialize(..., ['allowed_classes' => false])` instead of `maybe_unserialize()`, so profiling a request never instantiates classes stored in the options table. Nested objects keep their original class name in the panel.
+- Leave `/_profiler` and `/_wdt` paths to WordPress (a regular 404) where profiling is disabled instead of answering 403, so production sites do not reveal the plugin. Unauthorized users on development environments still get 403.
+- Pin the reusable `sympress/workflows` CI workflows to v1.3.2.
+
 ## 1.4.2 — 2026-11-14
 
 - Register `profiler.is_disabled_state_checker` as a closure, the type Symfony's traceable event dispatcher, HTTP client and validator expect. Sites with `symfony/framework-bundle` no longer stop with a TypeError when the event dispatcher is built.
