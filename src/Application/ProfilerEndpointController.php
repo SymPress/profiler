@@ -49,6 +49,11 @@ final class ProfilerEndpointController
             return null;
         }
 
+        // Where profiling is off, behave like any unknown URL so the plugin cannot be fingerprinted.
+        if (!$this->gate->environmentAllowsProfiling()) {
+            return null;
+        }
+
         if (!$this->gate->canAccessProfiler()) {
             return $this->text('Access denied.', 403);
         }

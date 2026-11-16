@@ -81,7 +81,9 @@ Local/development access still requires an authenticated WordPress user with
 the whole network). Production additionally requires the explicit
 `profiler.enable_outside_development` opt-in; that filter cannot authorize an
 anonymous visitor. Endpoints, toolbar and collection use the same authorization
-boundary. The route hook remains registered to return 403 for denied requests;
+boundary. The route hook remains registered: it returns 403 to unauthorized
+users where profiling is enabled and leaves profiler paths to WordPress (a
+regular 404) where it is not, so production sites do not reveal the plugin;
 collection/recorder hooks are registered only after the gate opens at
 `plugins_loaded`, after WordPress pluggables become available.
 

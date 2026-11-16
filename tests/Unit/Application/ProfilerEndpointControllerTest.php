@@ -30,19 +30,8 @@ final class ProfilerEndpointControllerTest extends TestCase
     protected function setUp(): void
     {
         $this->storageDirectory = sys_get_temp_dir() . '/profiler-endpoint-' . bin2hex(random_bytes(4));
-        $storage = new FilesystemProfileStorage($this->storageDirectory);
-        $storage->save(new ProfileRecord('abc123', '2026-11-13T10:00:00.000+00:00', ['method' => 'GET', 'url' => 'https://example.test/'], []));
-        $urls = new ProfilerUrlGenerator();
-        $assets = new WebProfilerAssets();
-        $this->controller = new ProfilerEndpointController(
-            $this->gate(),
-            new ProfilerRequestMatcher(),
-            $urls,
-            $storage,
-            new ProfileViewBuilder([], new ToolbarRenderer($assets, $urls)),
-            new ProfilerPageRenderer(new PhpViewRenderer(dirname(__DIR__, 3) . '/views'), $assets, $urls),
-            $assets,
-        );
+        (new FilesystemProfileStorage($this->storageDirectory))->save(new ProfileRecord('abc123', '2026-11-13T10:00:00.000+00:00', ['method' => 'GET', 'url' => 'https://example.test/'], []));
+        $this->controller = $this->controller(EnvConfig::LOCAL);
     }
 
     #[\Override]
@@ -63,6 +52,16 @@ final class ProfilerEndpointControllerTest extends TestCase
 
         foreach (['/_profiler', '/_profiler/abc123', '/_profiler/latest', '/_profiler/phpinfo', '/_wdt/abc123', '/_wdt/styles', '/_profiler/font/JetBrainsMono'] as $path) {
             self::assertSame(['status' => 403, 'type' => 'text/plain; charset=UTF-8', 'body' => 'Access denied.'], $this->respond($path), $path);
+        }
+    }
+
+    public function testEveryRouteIsLeftToWordPressWhereProfilingIsDisabled(): void
+    {
+        $this->controller = $this->controller(EnvConfig::PRODUCTION);
+
+        // A 403 would reveal the plugin; WordPress answers these paths with its regular 404.
+        foreach (['/_profiler', '/_profiler/abc123', '/_profiler/latest', '/_profiler/phpinfo', '/_wdt/abc123', '/_wdt/styles', '/_profiler/font/JetBrainsMono'] as $path) {
+            self::assertNull($this->respond($path), $path);
         }
     }
 
@@ -117,11 +116,27 @@ final class ProfilerEndpointControllerTest extends TestCase
         return [$response['status'] ?? null, $response['type'] ?? null];
     }
 
-    private function gate(): ProfileGate
+    private function controller(string $env): ProfilerEndpointController
+    {
+        $urls = new ProfilerUrlGenerator();
+        $assets = new WebProfilerAssets();
+
+        return new ProfilerEndpointController(
+            $this->gate($env),
+            new ProfilerRequestMatcher(),
+            $urls,
+            new FilesystemProfileStorage($this->storageDirectory),
+            new ProfileViewBuilder([], new ToolbarRenderer($assets, $urls)),
+            new ProfilerPageRenderer(new PhpViewRenderer(dirname(__DIR__, 3) . '/views'), $assets, $urls),
+            $assets,
+        );
+    }
+
+    private function gate(string $env): ProfileGate
     {
         $config = $this->createStub(SiteConfig::class);
-        $config->method('env')->willReturn(EnvConfig::LOCAL);
-        $config->method('envIs')->willReturnCallback(static fn (string $environment): bool => $environment === EnvConfig::LOCAL);
+        $config->method('env')->willReturn($env);
+        $config->method('envIs')->willReturnCallback(static fn (string $environment): bool => $environment === $env);
         $config->method('hosting')->willReturn(SiteConfig::HOSTING_OTHER);
         $config->method('hostingIs')->willReturn(false);
         $config->method('locations')->willReturn($this->createStub(Locations::class));
