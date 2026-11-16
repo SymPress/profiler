@@ -228,10 +228,10 @@ if (!function_exists('wp_load_alloptions')) {
     }
 }
 
-if (!function_exists('maybe_unserialize')) {
-    function maybe_unserialize(mixed $value): mixed
+if (!function_exists('is_serialized')) {
+    function is_serialized(mixed $data): bool
     {
-        return is_string($value) && preg_match('/^[aOs]:\d+:/', $value) === 1 ? unserialize($value) : $value;
+        return is_string($data) && preg_match('/^(?:N;|b:[01];|[id]:[^;]+;|[aOs]:\d+:.*[;}])$/s', trim($data)) === 1;
     }
 }
 

@@ -27,6 +27,7 @@ use SymPress\Profiler\Collector\WordPressQueryCollector;
 use SymPress\Profiler\Recorder\ProfilerHttpClientRecorder;
 use SymPress\Profiler\Recorder\ProfilerLifecycleRecorder;
 use SymPress\Profiler\Support\ArraySanitizer;
+use SymPress\Profiler\Tests\Support\WakeupSpy;
 use SymPress\Profiler\Value\ProfileContext;
 
 final class CollectorDataTest extends TestCase
@@ -104,6 +105,22 @@ final class CollectorDataTest extends TestCase
         self::assertSame('array', $rows['rewrite']['type']);
         self::assertSame('SymPress', $rows['blogname']['value']);
         self::assertSame(serialize(new \stdClass()), $rows['widget']['value']);
+    }
+
+    public function testOptionValuesNeverInstantiateStoredObjects(): void
+    {
+        WakeupSpy::$woken = false;
+        $GLOBALS['profiler_test_alloptions'] = [
+            'gadget' => serialize(new WakeupSpy()),
+            'nested' => serialize(['spy' => new WakeupSpy()]),
+        ];
+
+        $payload = (new ArraySanitizer())->normalizePayload((new OptionsCollector())->collect($this->context()));
+        $rows = array_column($payload['largest_autoloaded'], null, 'name');
+
+        self::assertFalse(WakeupSpy::$woken);
+        self::assertSame(serialize(new WakeupSpy()), $rows['gadget']['value']);
+        self::assertSame(['spy' => '[object ' . WakeupSpy::class . ']'], $rows['nested']['value']);
     }
 
     public function testDatabaseKeepsExecutionOrderRealDuplicatesAndSkipsProfilerQueries(): void

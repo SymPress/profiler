@@ -23,7 +23,9 @@ final class ArraySanitizer
             } elseif ($item instanceof \Stringable) {
                 $normalized[$key] = (string) $item;
             } elseif (is_object($item)) {
-                $normalized[$key] = sprintf('[object %s]', $item::class);
+                // unserialize() without allowed classes leaves incomplete objects; show the original class name.
+                $class = $item instanceof \__PHP_Incomplete_Class ? ((array) $item)['__PHP_Incomplete_Class_Name'] ?? null : null;
+                $normalized[$key] = sprintf('[object %s]', is_string($class) ? $class : $item::class);
             } elseif (is_resource($item)) {
                 $normalized[$key] = '[resource]';
             } else {
