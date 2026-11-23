@@ -12,8 +12,12 @@ SymPress kernel service container.
 ## Installation
 
 ```bash
-composer require sympress/profiler
+composer require --dev sympress/profiler
 ```
+
+Install it as a development dependency so production builds (`composer install
+--no-dev`) do not ship it. Stored profiles are not redacted, so keep the
+profiler out of production deployments.
 
 The package requires PHP 8.5, WordPress 6.9 or newer, and `sympress/kernel`.
 
