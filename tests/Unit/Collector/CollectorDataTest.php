@@ -230,6 +230,22 @@ final class CollectorDataTest extends TestCase
         self::assertSame('A valid URL was not provided.', $recorder->entries()[0]['error']);
     }
 
+    public function testHttpRecorderDoesNotLeaveShortCircuitedCallsPending(): void
+    {
+        $recorder = new ProfilerHttpClientRecorder($this->gate());
+        $recorder->enable();
+        $preempted = ['response' => ['code' => 200], 'body' => ''];
+
+        // A pre_http_request filter answered the call: http_api_debug never fires for it.
+        self::assertSame($preempted, $recorder->track($preempted, ['method' => 'GET'], 'https://example.test/'));
+        usleep(50_000);
+        $recorder->track(false, ['method' => 'GET'], 'https://example.test/');
+        $recorder->record($preempted, 'response', 'WP_Http', ['method' => 'GET'], 'https://example.test/');
+
+        self::assertCount(1, $recorder->entries());
+        self::assertLessThan(50.0, $recorder->entries()[0]['duration_ms']);
+    }
+
     public function testListenersRegisteredThroughTheKernelAreNamedByTheirService(): void
     {
         // The kernel's HookLoader registers a closure that captures the service id and method.
