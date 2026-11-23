@@ -107,3 +107,6 @@ Use `composer cs:fix` to apply automatic style fixes.
 ## License
 
 This package is licensed under `GPL-2.0-or-later`.
+
+Bundled third-party assets (Symfony WebProfilerBundle templates, Tabler Icons,
+JetBrains Mono) keep their own licenses; see [NOTICE](NOTICE).
