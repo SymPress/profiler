@@ -98,7 +98,7 @@ services:
     SymPress\Profiler\Recorder\ProfilerHttpClientRecorder:
         tags:
             - { name: profiler.hook, hook: 'plugins_loaded', method: enable, priority: 35 }
-            - { name: profiler.hook, hook: 'pre_http_request', method: track, type: 'filter', accepted_args: 3 }
+            - { name: profiler.hook, hook: 'pre_http_request', method: track, type: 'filter', priority: 999999, accepted_args: 3 }
             - { name: profiler.hook, hook: 'http_api_debug', method: record, accepted_args: 5 }
 
     SymPress\Profiler\Recorder\ProfilerTemplateRecorder:

@@ -71,7 +71,7 @@
       "collector_keys": ["http_client"],
       "hooks": [
         {"hook": "plugins_loaded", "method": "enable", "priority": 35},
-        {"hook": "pre_http_request", "method": "track", "type": "filter", "accepted_args": 3},
+        {"hook": "pre_http_request", "method": "track", "type": "filter", "priority": 999999, "accepted_args": 3},
         {"hook": "http_api_debug", "method": "record", "accepted_args": 5}
       ],
       "tag": "profiler.hook"

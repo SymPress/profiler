@@ -29,7 +29,8 @@ final class ProfilerHttpClientRecorder
     /** @param array<string, mixed> $parsedArgs */
     public function track(mixed $preempt, array $parsedArgs, mixed $url): mixed
     {
-        if (!$this->enabled) {
+        // A short-circuited call never reaches http_api_debug, so its entry would never be popped.
+        if (!$this->enabled || $preempt !== false) {
             return $preempt;
         }
 
