@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 where applicable.
 
+## 1.4.4 — 2026-11-23
+
+- HTTP Client: a request answered by a `pre_http_request` filter no longer leaves an open entry behind, so the next real request to the same method and URL shows its own duration instead of one counted from the short-circuited call. The recorder now runs at priority 999999 to see the final preempt value.
+- README: install the profiler with `composer require --dev`, so production builds leave it out.
+- Add a `NOTICE` file with the copyright notices and license texts of the bundled Symfony WebProfilerBundle templates, Tabler icons (MIT) and JetBrains Mono font (OFL 1.1).
+- Let Dependabot update the GitHub Actions pins.
+
 ## 1.4.3 — 2026-11-16
 
 - Decode option and transient values in the Options panel with `unserialize(..., ['allowed_classes' => false])` instead of `maybe_unserialize()`, so profiling a request never instantiates classes stored in the options table. Nested objects keep their original class name in the panel.
